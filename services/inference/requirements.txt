@@ -1,0 +1,8 @@
+fastapi==0.110.0
+uvicorn==0.30.0
+pillow==10.4.0
+opencv-python-headless==4.10.0.84
+easyocr==1.7.1
+# Install an appropriate torch build for your Python/OS (CPU-only example):
+# torch>=2.0.0
+# torchvision>=0.15.0

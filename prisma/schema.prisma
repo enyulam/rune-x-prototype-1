@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  password      String   // Hashed password
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  uploads       Upload[]
+  feedback      Feedback[]
+}
+
+model Upload {
+  id            String   @id @default(cuid())
+  userId        String
+  originalName  String
+  filePath      String
+  processedAt   DateTime?
+  status        ProcessingStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Enhanced metadata for Rune-X
+  provenance    String?  // Provenance information (excavation ID, catalogue number, etc.)
+  imagingMethod String?  // Imaging modality (photography, CT, multispectral, etc.)
+  metadata      String?  // JSON metadata for additional context
+  scriptType    String?  // Detected or specified script type
+  
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  glyphs        GlyphMatch[]
+  translations  Translation[]
+  versions      ReconstructionVersion[]
+  exports       Export[]
+}
+
+model AncientScript {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  region        String?
+  timePeriod    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  glyphs        Glyph[]
+}
+
+model Glyph {
+  id            String   @id @default(cuid())
+  scriptId      String
+  symbol        String   // Unicode or image representation
+  name          String?
+  description   String?
+  strokeCount   Int?
+  radicals      String?  // JSON array of radical components
+  confidence    Float    @default(0.0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  script        AncientScript @relation(fields: [scriptId], references: [id])
+  matches       GlyphMatch[]
+  translations  Translation[]
+  feedback      Feedback[]
+}
+
+model GlyphMatch {
+  id            String   @id @default(cuid())
+  uploadId      String
+  glyphId       String
+  confidence    Float
+  boundingBox   String?  // JSON: {x, y, width, height}
+  position      Int?     // Position in the text
+  createdAt     DateTime @default(now())
+  
+  // Enhanced GTE features
+  strokeCount   Int?     // Detected stroke count
+  contourComplexity Float? // Contour complexity metric
+  isReconstructed Boolean @default(false) // Whether this glyph was reconstructed by GRM
+  
+  upload        Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  glyph         Glyph  @relation(fields: [glyphId], references: [id])
+  
+  @@unique([uploadId, position])
+}
+
+model Translation {
+  id            String   @id @default(cuid())
+  uploadId      String
+  glyphId       String?
+  originalText  String
+  translatedText String
+  confidence    Float
+  language      String
+  context       String?
+  createdAt     DateTime @default(now())
+  
+  upload        Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  glyph         Glyph? @relation(fields: [glyphId], references: [id])
+}
+
+model Feedback {
+  id            String   @id @default(cuid())
+  userId        String
+  glyphId       String?
+  uploadId      String?
+  feedbackType  FeedbackType
+  rating        Int      // 1-5 rating
+  comment       String?
+  suggestedTranslation String?
+  createdAt     DateTime @default(now())
+  
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  glyph         Glyph?  @relation(fields: [glyphId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+  RESEARCHER
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum FeedbackType {
+  TRANSLATION_QUALITY
+  GLYPH_RECOGNITION
+  UI_EXPERIENCE
+  GENERAL
+}
+
+// New models for Rune-X features
+
+model ReconstructionVersion {
+  id            String   @id @default(cuid())
+  uploadId      String
+  versionNumber Int      // Version number for this reconstruction
+  reconstructedGlyphs String? // JSON array of reconstructed glyph data
+  confidence    Float    // Overall confidence for this reconstruction
+  method        String?  // Reconstruction method used (GRM variant)
+  createdAt     DateTime @default(now())
+  
+  upload        Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  
+  @@unique([uploadId, versionNumber])
+}
+
+model Export {
+  id            String   @id @default(cuid())
+  uploadId      String
+  format        ExportFormat
+  filePath      String?  // Path to exported file
+  exportedAt    DateTime @default(now())
+  
+  upload        Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+}
+
+enum ExportFormat {
+  TEI_XML
+  JSON_LD
+  CSV
+  PDF
+  IMAGE
+}

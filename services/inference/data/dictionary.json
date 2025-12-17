@@ -1,0 +1,2060 @@
+{
+   "一": {
+        "pinyin": "yī",
+        "meaning": "one; 1; single; a (article)",
+        "alts": [
+            "壹"
+        ],
+        "notes": "MOE Level 1 (frequently used); basic numeral, high-frequency in all contexts"
+    },
+    "人": {
+        "pinyin": "rén",
+        "meaning": "person; people; human; individual",
+        "alts": [
+            "亼",
+            "仁（classical variant）"
+        ],
+        "notes": "MOE Level 1; core social character, foundational for compounds (e.g., 人民)"
+    },
+    "二": {
+        "pinyin": "èr",
+        "meaning": "two; 2; double; second",
+        "alts": [
+            "贰"
+        ],
+        "notes": "MOE Level 1; basic numeral, simple stroke structure for education"
+    },
+    "十": {
+        "pinyin": "shí",
+        "meaning": "ten; 10; cross; tenth",
+        "alts": [
+            "拾"
+        ],
+        "notes": "MOE Level 1; numeral, used in directionals (e.g., 十字路)"
+    },
+    "百": {
+        "pinyin": "bǎi",
+        "meaning": "hundred; 100; numerous; many",
+        "alts": [
+            "佰"
+        ],
+        "notes": "MOE Level 1; numeral, common in idioms (e.g., 百折不挠)"
+    },
+    "千": {
+        "pinyin": "qiān",
+        "meaning": "thousand; 1000; a great many; thousandth",
+        "alts": [
+            "仟"
+        ],
+        "notes": "MOE Level 1; numeral, daily use (e.g., 千万, 千米)"
+    },
+    "万": {
+        "pinyin": "wàn",
+        "meaning": "ten thousand; 10,000; myriad; countless",
+        "alts": [
+            "萬"
+        ],
+        "notes": "MOE Level 1; core for large quantities, traditional 萬"
+    },
+    "上": {
+        "pinyin": "shàng; shǎng",
+        "meaning": "up; above; on; go up; superior; shang (music tone)",
+        "alts": [
+            "尚（classical variant）"
+        ],
+        "notes": "MOE Level 1; directional, polyphonic (shàng daily, shǎng music)"
+    },
+    "下": {
+        "pinyin": "xià",
+        "meaning": "down; below; under; go down; inferior; next",
+        "alts": [],
+        "notes": "MOE Level 1; directional, paired with 上 (e.g., 上下)"
+    },
+    "大": {
+        "pinyin": "dà; dài; tài",
+        "meaning": "big; large; great; adult; major; doctor (dài); Tai (surname)",
+        "alts": [
+            "夶（rare variant）"
+        ],
+        "notes": "MOE Level 1; core descriptor, polyphonic"
+    },
+    "小": {
+        "pinyin": "xiǎo",
+        "meaning": "small; little; minor; young; petty",
+        "alts": [
+            "尛（rare variant）"
+        ],
+        "notes": "MOE Level 1; core descriptor, paired with 大 (e.g., 小孩)"
+    },
+    "天": {
+        "pinyin": "tiān",
+        "meaning": "sky; heaven; day; nature; God",
+        "alts": [],
+        "notes": "MOE Level 1; cultural significance (e.g., 天道, 天下)"
+    },
+    "地": {
+        "pinyin": "dì; de",
+        "meaning": "earth; land; ground; place; structural particle (de)",
+        "alts": [
+            "埊（classical variant）"
+        ],
+        "notes": "MOE Level 1; polyphonic (dì noun, de particle), paired with 天"
+    },
+    "水": {
+        "pinyin": "shuǐ",
+        "meaning": "water; liquid; river; aqueous",
+        "alts": [
+            "氺（calligraphic variant）"
+        ],
+        "notes": "MOE Level 1; basic element, daily use (e.g., 水果, 水平)"
+    },
+    "火": {
+        "pinyin": "huǒ",
+        "meaning": "fire; flame; anger; fiery",
+        "alts": [
+            "灬（component variant）"
+        ],
+        "notes": "MOE Level 1; basic element, daily use (e.g., 火车, 火锅)"
+    },
+    "山": {
+        "pinyin": "shān",
+        "meaning": "mountain; hill; peak; mountain range",
+        "alts": [
+            "屾（rare variant）"
+        ],
+        "notes": "MOE Level 1; nature character, place names (e.g., 山东)"
+    },
+    "木": {
+        "pinyin": "mù",
+        "meaning": "wood; tree; timber; wooden; woody",
+        "alts": [
+            "朩（stroke variant）"
+        ],
+        "notes": "MOE Level 1; basic element, plant/construction words (e.g., 木头)"
+    },
+    "日": {
+        "pinyin": "rì",
+        "meaning": "sun; day; date; daily",
+        "alts": [
+            "曰（classical variant, different usage）"
+        ],
+        "notes": "MOE Level 1; time/nature character (e.g., 日子, 日常)"
+    },
+    "月": {
+        "pinyin": "yuè; rù",
+        "meaning": "moon; month; lunar; enter (rù, archaic)",
+        "alts": [
+            "冂（handwriting confusion）"
+        ],
+        "notes": "MOE Level 1; time character, paired with 日 (日月)"
+    },
+    "口": {
+        "pinyin": "kǒu",
+        "meaning": "mouth; opening; speech; classifier for people/animals",
+        "alts": [
+            "囗（enclosure variant, different meaning）"
+        ],
+        "notes": "MOE Level 1; basic radical, speech words (e.g., 口语)"
+    },
+    "手": {
+        "pinyin": "shǒu",
+        "meaning": "hand; manual; personal; by hand",
+        "alts": [
+            "扌（radical variant）"
+        ],
+        "notes": "MOE Level 1; body part, action words (e.g., 手机, 手工)"
+    },
+    "心": {
+        "pinyin": "xīn",
+        "meaning": "heart; mind; feeling; core; intention",
+        "alts": [
+            "忄（radical variant）"
+        ],
+        "notes": "MOE Level 1; emotion character, psychology words (e.g., 心情)"
+    },
+    "目": {
+        "pinyin": "mù",
+        "meaning": "eye; sight; goal; purpose; look",
+        "alts": [
+            "眀（calligraphic variant）"
+        ],
+        "notes": "MOE Level 1; body part, vision words (e.g., 目的, 目光)"
+    },
+    "耳": {
+        "pinyin": "ěr",
+        "meaning": "ear; listen; hear; ear-shaped",
+        "alts": [],
+        "notes": "MOE Level 1; body part, hearing words (e.g., 耳朵, 耳机)"
+    },
+    "足": {
+        "pinyin": "zú; zúo",
+        "meaning": "foot; leg; sufficient; satisfy; walk (zuó, archaic)",
+        "alts": [
+            "⻊（radical variant）"
+        ],
+        "notes": "MOE Level 1; body part, movement words (e.g., 足球)"
+    },
+    "头": {
+        "pinyin": "tóu; tou",
+        "meaning": "head; top; leader; first; suffix (tou)",
+        "alts": [
+            "頭"
+        ],
+        "notes": "MOE Level 1; traditional 頭, polyphonic (tóu noun, tou suffix)"
+    },
+    "面": {
+        "pinyin": "miàn",
+        "meaning": "face; surface; side; noodles; aspect; plane",
+        "alts": [
+            "麵（traditional for noodles）"
+        ],
+        "notes": "MOE Level 1; dual meaning (face/noodles), traditional 麵 for food"
+    },
+    "道": {
+        "pinyin": "dào",
+        "meaning": "way; path; tao; method; say; classifier for roads/rivers",
+        "alts": [
+            "衟（classical variant）"
+        ],
+        "notes": "MOE Level 1; Taoist term, philosophy/transport (e.g., 道理)"
+    },
+    "德": {
+        "pinyin": "dé",
+        "meaning": "virtue; morality; ethics; kindness",
+        "alts": [
+            "惪（classical variant）"
+        ],
+        "notes": "MOE Level 1; cultural/ethical term (e.g., 道德, 品德)"
+    },
+    "学": {
+        "pinyin": "xué",
+        "meaning": "study; learn; school; education; academic",
+        "alts": [
+            "學"
+        ],
+        "notes": "MOE Level 1; education core (e.g., 学习, 学校), traditional 學"
+    },
+    "习": {
+        "pinyin": "xí",
+        "meaning": "practice; habit; study; review; custom",
+        "alts": [
+            "習"
+        ],
+        "notes": "MOE Level 1; paired with 学 (学习), traditional 習"
+    },
+    "工": {
+        "pinyin": "gōng; gòng",
+        "meaning": "work; labor; craft; engineer; industrial; together (gòng, archaic)",
+        "alts": [
+            "功（handwriting confusion）"
+        ],
+        "notes": "MOE Level 1; work/industry words (e.g., 工人, 工厂)"
+    },
+    "作": {
+        "pinyin": "zuò; zuō",
+        "meaning": "do; make; work; write; composition; workshop (zuō)",
+        "alts": [
+            "做（contextual variant）",
+            "怍（rare variant）"
+        ],
+        "notes": "MOE Level 1; polyphonic (zuò daily, zuō 作坊), confused with 做"
+    },
+    "业": {
+        "pinyin": "yè",
+        "meaning": "career; profession; industry; business; study; achievement",
+        "alts": [
+            "業"
+        ],
+        "notes": "MOE Level 1; career/education (e.g., 事业, 毕业), traditional 業"
+    },
+    "家": {
+        "pinyin": "jiā; jie",
+        "meaning": "home; family; household; expert; suffix (jie, e.g., 姑娘家)",
+        "alts": [
+            "傢（traditional for furniture）"
+        ],
+        "notes": "MOE Level 1; family core (e.g., 家庭), polyphonic"
+    },
+    "国": {
+        "pinyin": "guó",
+        "meaning": "country; nation; state; national",
+        "alts": [
+            "國"
+        ],
+        "notes": "MOE Level 1; political/geographic (e.g., 国家, 中国), traditional 國"
+    },
+    "中": {
+        "pinyin": "zhōng; zhòng",
+        "meaning": "middle; center; in; among; China; hit (zhòng); be elected (zhòng)",
+        "alts": [],
+        "notes": "MOE Level 1; directional/cultural core (e.g., 中间, 中文), polyphonic"
+    },
+    "华": {
+        "pinyin": "huá; huà; huā",
+        "meaning": "China; Chinese; magnificent; flower (huā); Hua (surname, huà)",
+        "alts": [
+            "華"
+        ],
+        "notes": "MOE Level 1; cultural term (e.g., 中华, 华人), traditional 華"
+    },
+    "和": {
+        "pinyin": "hé; hè; huó; huò; hú",
+        "meaning": "peace; harmony; and; with; moderate; sing in harmony (hè); knead (huó); mix (huò); win (hú, mahjong)",
+        "alts": [
+            "龢（classical variant for music）"
+        ],
+        "notes": "MOE Level 1; cultural core (e.g., 和平), highly polyphonic"
+    },
+    "平": {
+        "pinyin": "píng",
+        "meaning": "flat; level; peaceful; calm; average; equal",
+        "alts": [],
+        "notes": "MOE Level 1; paired with 和 (和平), daily use (e.g., 平时)"
+    },
+    "安": {
+        "pinyin": "ān",
+        "meaning": "safe; peaceful; secure; settle; calm; install",
+        "alts": [],
+        "notes": "MOE Level 1; safety core (e.g., 安全, 安心)"
+    },
+    "乐": {
+        "pinyin": "lè; yuè; yào; lào",
+        "meaning": "happy; joy; music; enjoy; want (yào, archaic); Lao (surname, lào)",
+        "alts": [
+            "樂"
+        ],
+        "notes": "MOE Level 1; traditional 樂, polyphonic (lè joy, yuè music)"
+    },
+    "福": {
+        "pinyin": "fú",
+        "meaning": "blessing; fortune; happiness; luck; blessing from God",
+        "alts": [
+            "褔（stroke variant）"
+        ],
+        "notes": "MOE Level 1; cultural festival term (e.g., 福气, 祝福)"
+    },
+    "寿": {
+        "pinyin": "shòu",
+        "meaning": "longevity; birthday; life span; celebrate birthday",
+        "alts": [
+            "壽"
+        ],
+        "notes": "MOE Level 1; longevity term (e.g., 长寿, 寿礼), traditional 壽"
+    },
+    "喜": {
+        "pinyin": "xǐ",
+        "meaning": "happy; joyful; pleased; celebration; like",
+        "alts": [],
+        "notes": "MOE Level 1; emotion core (e.g., 喜欢, 喜事), festivals"
+    },
+    "好": {
+        "pinyin": "hǎo; hào",
+        "meaning": "good; well; nice; like; friendly; hobby (hào); be fond of (hào)",
+        "alts": [],
+        "notes": "MOE Level 1; high-frequency descriptor (e.g., 好人), polyphonic"
+    },
+    "美": {
+        "pinyin": "měi",
+        "meaning": "beautiful; pretty; handsome; good; US (abbrev.); beauty",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 美丽, 美好), cultural (e.g., 美德)"
+    },
+    "爱": {
+        "pinyin": "ài",
+        "meaning": "love; affection; like; care for; cherish",
+        "alts": [
+            "愛"
+        ],
+        "notes": "MOE Level 1; emotion core (e.g., 爱情, 爱心), traditional 愛"
+    },
+    "友": {
+        "pinyin": "yǒu",
+        "meaning": "friend; friendly; associate; friendship",
+        "alts": [],
+        "notes": "MOE Level 1; social core (e.g., 朋友, 友好)"
+    },
+    "情": {
+        "pinyin": "qíng",
+        "meaning": "feeling; emotion; affection; love; situation; circumstance",
+        "alts": [],
+        "notes": "MOE Level 1; emotion words (e.g., 情感, 情况), radical 忄"
+    },
+    "理": {
+        "pinyin": "lǐ",
+        "meaning": "reason; logic; truth; manage; handle; tidy",
+        "alts": [],
+        "notes": "MOE Level 1; rational/management (e.g., 道理, 理解)"
+    },
+    "想": {
+        "pinyin": "xiǎng",
+        "meaning": "think; consider; miss; want; idea; suppose",
+        "alts": [],
+        "notes": "MOE Level 1; thought verb (e.g., 想法, 想念), radical 心"
+    },
+    "说": {
+        "pinyin": "shuō; shuì; yuè",
+        "meaning": "say; speak; talk; tell; explain; persuade (shuì); pleased (yuè, archaic)",
+        "alts": [
+            "說"
+        ],
+        "notes": "MOE Level 1; speech verb (e.g., 说话), traditional 說"
+    },
+    "看": {
+        "pinyin": "kàn; kān",
+        "meaning": "look; see; watch; read; consider; guard (kān); watch over (kān)",
+        "alts": [],
+        "notes": "MOE Level 1; multi-meaning verb (e.g., 看书), polyphonic"
+    },
+    "听": {
+        "pinyin": "tīng",
+        "meaning": "listen; hear; obey; accept; listen to",
+        "alts": [
+            "聽"
+        ],
+        "notes": "MOE Level 1; hearing verb (e.g., 听音乐), traditional 聽"
+    },
+    "读": {
+        "pinyin": "dú; dòu",
+        "meaning": "read; study; pronounce; peruse; read aloud (dòu)",
+        "alts": [
+            "讀"
+        ],
+        "notes": "MOE Level 1; education verb (e.g., 读书), traditional 讀"
+    },
+    "写": {
+        "pinyin": "xiě",
+        "meaning": "write; compose; describe; copy; write down",
+        "alts": [
+            "寫"
+        ],
+        "notes": "MOE Level 1; writing verb (e.g., 写字), traditional 寫"
+    },
+    "画": {
+        "pinyin": "huà",
+        "meaning": "draw; paint; picture; painting; stroke (in character); draw a line",
+        "alts": [
+            "畫"
+        ],
+        "notes": "MOE Level 1; art/strokes (e.g., 画画), traditional 畫"
+    },
+    "书": {
+        "pinyin": "shū",
+        "meaning": "book; write; document; letter; calligraphy",
+        "alts": [
+            "書"
+        ],
+        "notes": "MOE Level 1; education/literature (e.g., 书本, 书法), traditional 書"
+    },
+    "数": {
+        "pinyin": "shù; shǔ; shuò",
+        "meaning": "number; count; calculate; several; fate; repeatedly (shuò)",
+        "alts": [
+            "數"
+        ],
+        "notes": "MOE Level 1; numeral/verb (e.g., 数字, 数数), traditional 數"
+    },
+    "字": {
+        "pinyin": "zì",
+        "meaning": "character; word; letter; name; write; character stroke",
+        "alts": [],
+        "notes": "MOE Level 1; language core (e.g., 汉字, 字体)"
+    },
+    "文": {
+        "pinyin": "wén",
+        "meaning": "text; writing; culture; language; civil; literary",
+        "alts": [],
+        "notes": "MOE Level 1; cultural core (e.g., 文化, 文字), paired with 武"
+    },
+    "章": {
+        "pinyin": "zhāng",
+        "meaning": "chapter; section; rule; badge; seal; article",
+        "alts": [],
+        "notes": "MOE Level 1; literature/seal (e.g., 文章, 印章)"
+    },
+    "印": {
+        "pinyin": "yìn",
+        "meaning": "seal; stamp; print; impress; mark; engrave",
+        "alts": [],
+        "notes": "MOE Level 1; seal-carving core (e.g., 印章, 打印), official use"
+    },
+    "刻": {
+        "pinyin": "kè",
+        "meaning": "carve; engrave; moment; engraving; harsh; strict",
+        "alts": [],
+        "notes": "MOE Level 1; seal-carving (e.g., 篆刻, 刻章), time (e.g., 立刻)"
+    },
+    "艺": {
+        "pinyin": "yì",
+        "meaning": "art; skill; craft; talent; artistic",
+        "alts": [
+            "藝"
+        ],
+        "notes": "MOE Level 1; art/seal (e.g., 艺术, 技艺), traditional 藝"
+    },
+    "术": {
+        "pinyin": "shù; shú; zhú",
+        "meaning": "art; skill; technique; method; surgery; ripe (shú, archaic); bamboo (zhú, archaic)",
+        "alts": [
+            "術"
+        ],
+        "notes": "MOE Level 1; art/technique (e.g., 技术, 篆刻术), traditional 術"
+    },
+    "父": {
+        "pinyin": "fù; fǔ",
+        "meaning": "father; parent; fatherly; ruler (fǔ, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; family core (e.g., 父亲, 父母), polyphonic"
+    },
+    "母": {
+        "pinyin": "mǔ",
+        "meaning": "mother; female; maternal; motherly",
+        "alts": [],
+        "notes": "MOE Level 1; family core (e.g., 母亲, 母爱)"
+    },
+    "儿": {
+        "pinyin": "ér; er",
+        "meaning": "son; child; young; suffix (er); plural marker",
+        "alts": [
+            "兒"
+        ],
+        "notes": "MOE Level 1; family/suffix (e.g., 儿子, 花儿), traditional 兒"
+    },
+    "女": {
+        "pinyin": "nǚ; rǔ",
+        "meaning": "woman; female; girl; daughter; you (rǔ, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; gender core (e.g., 女人, 女儿), radical for female words"
+    },
+    "子": {
+        "pinyin": "zǐ; zi",
+        "meaning": "son; child; seed; fruit; suffix (zi); ancient honorific",
+        "alts": [],
+        "notes": "MOE Level 1; family/suffix (e.g., 儿子, 桌子)"
+    },
+    "夫": {
+        "pinyin": "fū; fú",
+        "meaning": "husband; man; worker; scholar; he (fú, archaic); alas (fú, interjection)",
+        "alts": [],
+        "notes": "MOE Level 1; family/social (e.g., 丈夫, 夫人), polyphonic"
+    },
+    "妻": {
+        "pinyin": "qī; qì",
+        "meaning": "wife; spouse; marry (qì, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; family core (e.g., 妻子, 夫妻), polyphonic"
+    },
+    "老": {
+        "pinyin": "lǎo",
+        "meaning": "old; aged; senior; veteran; prefix for respect (e.g., 老师)",
+        "alts": [],
+        "notes": "MOE Level 1; age descriptor (e.g., 老人, 老师), kinship prefix"
+    },
+    "少": {
+        "pinyin": "shǎo; shào",
+        "meaning": "few; little; less; young; teenager (shào); junior (shào)",
+        "alts": [],
+        "notes": "MOE Level 1; quantity/age (e.g., 多少, 少年), polyphonic"
+    },
+    "多": {
+        "pinyin": "duō",
+        "meaning": "many; much; more; a lot of; multiple",
+        "alts": [],
+        "notes": "MOE Level 1; quantity core (e.g., 多少, 多个), paired with 少"
+    },
+    "长": {
+        "pinyin": "cháng; zhǎng",
+        "meaning": "long; length; forever; grow; elder; leader (zhǎng); senior (zhǎng)",
+        "alts": [
+            "長"
+        ],
+        "notes": "MOE Level 1; length/growth (e.g., 长短, 长大), traditional 長"
+    },
+    "短": {
+        "pinyin": "duǎn",
+        "meaning": "short; brief; shortage; shortcoming",
+        "alts": [],
+        "notes": "MOE Level 1; length descriptor (e.g., 长短, 短信), paired with 长"
+    },
+    "前": {
+        "pinyin": "qián",
+        "meaning": "front; before; previous; former; ahead",
+        "alts": [],
+        "notes": "MOE Level 1; directional (e.g., 前面, 前天), paired with 后"
+    },
+    "后": {
+        "pinyin": "hòu",
+        "meaning": "behind; after; later; queen; empress",
+        "alts": [
+            "後"
+        ],
+        "notes": "MOE Level 1; directional (e.g., 后面, 后来), traditional 後"
+    },
+    "左": {
+        "pinyin": "zuǒ",
+        "meaning": "left; left side; leftist; east (ancient)",
+        "alts": [],
+        "notes": "MOE Level 1; directional (e.g., 左边, 左手), paired with 右"
+    },
+    "右": {
+        "pinyin": "yòu",
+        "meaning": "right; right side; rightist; west (ancient); help",
+        "alts": [],
+        "notes": "MOE Level 1; directional (e.g., 右边, 右手), paired with 左"
+    },
+    "东": {
+        "pinyin": "dōng",
+        "meaning": "east; eastern; thing (archaic); owner (archaic)",
+        "alts": [
+            "東"
+        ],
+        "notes": "MOE Level 1; directional (e.g., 东方, 东西), traditional 東"
+    },
+    "西": {
+        "pinyin": "xī",
+        "meaning": "west; western; thing; westward",
+        "alts": [],
+        "notes": "MOE Level 1; directional (e.g., 西方, 东西), paired with 东"
+    },
+    "南": {
+        "pinyin": "nán; nā",
+        "meaning": "south; southern; Nan (surname); Buddhist chant (nā, archaic)",
+        "alts": [
+            "喃（rare variant）"
+        ],
+        "notes": "MOE Level 1; directional (e.g., 南方, 南北), paired with 北"
+    },
+    "北": {
+        "pinyin": "běi",
+        "meaning": "north; northern; northward; defeat (archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; directional (e.g., 北方, 南北), paired with 南"
+    },
+    "里": {
+        "pinyin": "lǐ; li",
+        "meaning": "mile; kilometer (archaic); inside; within; village; suffix (li)",
+        "alts": [
+            "裏",
+            "裡"
+        ],
+        "notes": "MOE Level 1; inside/suffix (e.g., 里面, 哪里), traditional 裏/裡"
+    },
+    "外": {
+        "pinyin": "wài",
+        "meaning": "outside; external; foreign; besides; other",
+        "alts": [],
+        "notes": "MOE Level 1; directional (e.g., 外面, 外国), paired with 里"
+    },
+    "间": {
+        "pinyin": "jiān; jiàn",
+        "meaning": "between; among; room; interval; gap; separate (jiàn); criticize (jiàn)",
+        "alts": [
+            "閒"
+        ],
+        "notes": "MOE Level 1; space/action (e.g., 中间, 分开), traditional 閒"
+    },
+    "时": {
+        "pinyin": "shí",
+        "meaning": "time; hour; moment; season; era; timely",
+        "alts": [
+            "時"
+        ],
+        "notes": "MOE Level 1; time core (e.g., 时间, 时候), traditional 時"
+    },
+    "分": {
+        "pinyin": "fēn; fèn",
+        "meaning": "divide; separate; part; minute; fraction; component; share (fèn); duty (fèn)",
+        "alts": [],
+        "notes": "MOE Level 1; time/quantity (e.g., 分钟, 分数), polyphonic"
+    },
+    "秒": {
+        "pinyin": "miǎo",
+        "meaning": "second; minute; tiny; minimal",
+        "alts": [],
+        "notes": "MOE Level 1; time unit (e.g., 秒针, 分秒)"
+    },
+    "钟": {
+        "pinyin": "zhōng; zhòng",
+        "meaning": "clock; bell; minute; bell tower; weigh (zhòng, archaic)",
+        "alts": [
+            "鐘"
+        ],
+        "notes": "MOE Level 1; time/object (e.g., 钟表, 钟声), traditional 鐘"
+    },
+    "点": {
+        "pinyin": "diǎn",
+        "meaning": "point; dot; spot; o'clock; point (score); touch",
+        "alts": [
+            "點"
+        ],
+        "notes": "MOE Level 1; time/shape (e.g., 点钟, 点子), traditional 點"
+    },
+    "钱": {
+        "pinyin": "qián",
+        "meaning": "money; coin; cash; fund; Qian (surname)",
+        "alts": [
+            "錢"
+        ],
+        "notes": "MOE Level 1; financial core (e.g., 钱包, 花钱), traditional 錢"
+    },
+    "币": {
+        "pinyin": "bì",
+        "meaning": "currency; coin; money; legal tender",
+        "alts": [
+            "幣"
+        ],
+        "notes": "MOE Level 1; financial core (e.g., 货币, 硬币), traditional 幣"
+    },
+    "元": {
+        "pinyin": "yuán",
+        "meaning": "yuan (Chinese currency); dollar; origin; element; first",
+        "alts": [
+            "圓"
+        ],
+        "notes": "MOE Level 1; currency/element (e.g., 元钱, 元素), traditional 圓"
+    },
+    "角": {
+        "pinyin": "jiǎo; jué",
+        "meaning": "corner; angle; horn; jiao (1/10 yuan); role (jué); actor (jué)",
+        "alts": [],
+        "notes": "MOE Level 1; currency/shape (e.g., 角钱, 角度), polyphonic"
+    },
+    "饭": {
+        "pinyin": "fàn",
+        "meaning": "rice; meal; food; dine; cooked rice",
+        "alts": [
+            "飯"
+        ],
+        "notes": "MOE Level 1; daily food (e.g., 吃饭, 饭菜), traditional 飯"
+    },
+    "菜": {
+        "pinyin": "cài",
+        "meaning": "vegetable; dish; cuisine; side dish; greens",
+        "alts": [],
+        "notes": "MOE Level 1; food core (e.g., 蔬菜, 炒菜)"
+    },
+    "米": {
+        "pinyin": "mǐ",
+        "meaning": "rice; meter; grain; hulled rice; meter (unit)",
+        "alts": [],
+        "notes": "MOE Level 1; food/measurement (e.g., 米饭, 米尺)"
+    },
+    "包": {
+        "pinyin": "bāo",
+        "meaning": "bag; package; wrap; bun; include; guarantee",
+        "alts": [],
+        "notes": "MOE Level 1; daily object/food (e.g., 包子, 书包)"
+    },
+    "饺": {
+        "pinyin": "jiǎo",
+        "meaning": "dumpling; jiaozi; stuffed dumpling",
+        "alts": [
+            "餃"
+        ],
+        "notes": "MOE Level 1; food (e.g., 饺子, 水饺), traditional 餃"
+    },
+    "汤": {
+        "pinyin": "tāng; shāng",
+        "meaning": "soup; broth; hot water; boil; injury (shāng, archaic)",
+        "alts": [
+            "湯"
+        ],
+        "notes": "MOE Level 1; food (e.g., 汤面, 鸡汤), traditional 湯"
+    },
+    "茶": {
+        "pinyin": "chá",
+        "meaning": "tea; tea leaf; teacup; tea ceremony",
+        "alts": [],
+        "notes": "MOE Level 1; daily drink (e.g., 喝茶, 茶叶)"
+    },
+    "酒": {
+        "pinyin": "jiǔ",
+        "meaning": "wine; alcohol; liquor; alcoholic drink",
+        "alts": [],
+        "notes": "MOE Level 1; drink (e.g., 喝酒, 白酒)"
+    },
+    "杯": {
+        "pinyin": "bēi",
+        "meaning": "cup; glass; mug; trophy; measure word for drinks",
+        "alts": [
+            "盃"
+        ],
+        "notes": "MOE Level 1; drinkware (e.g., 茶杯, 酒杯), traditional 盃"
+    },
+    "碗": {
+        "pinyin": "wǎn",
+        "meaning": "bowl; bowlful; measure word for food/soup",
+        "alts": [
+            "椀"
+        ],
+        "notes": "MOE Level 1; tableware (e.g., 碗饭, 汤碗), traditional 椀"
+    },
+    "筷": {
+        "pinyin": "kuài",
+        "meaning": "chopsticks; pair of chopsticks",
+        "alts": [
+            "筯",
+            "箸"
+        ],
+        "notes": "MOE Level 1; tableware (e.g., 筷子, 竹筷), traditional 筯/箸"
+    },
+    "勺": {
+        "pinyin": "sháo; shuò",
+        "meaning": "spoon; ladle; scoop; measure word for liquid; shake (shuò, archaic)",
+        "alts": [
+            "杓"
+        ],
+        "notes": "MOE Level 1; tableware (e.g., 勺子, 汤勺), traditional 杓"
+    },
+    "刀": {
+        "pinyin": "dāo",
+        "meaning": "knife; sword; cutter; blade; measure word for paper",
+        "alts": [],
+        "notes": "MOE Level 1; tool (e.g., 菜刀, 剪刀)"
+    },
+    "叉": {
+        "pinyin": "chā; chà; chǎ; chá",
+        "meaning": "fork; cross; insert; fork (road, chà); mix (chǎ); check (chá, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; tool (e.g., 叉子, 餐叉), polyphonic"
+    },
+    "盘": {
+        "pinyin": "pán",
+        "meaning": "plate; dish; tray; disk; coil; round",
+        "alts": [
+            "盤"
+        ],
+        "notes": "MOE Level 1; tableware (e.g., 盘子, 餐盘), traditional 盤"
+    },
+    "碟": {
+        "pinyin": "dié",
+        "meaning": "small plate; dish; saucer; tray",
+        "alts": [
+            "喋（rare variant）"
+        ],
+        "notes": "MOE Level 1; tableware (e.g., 碟子, 菜碟)"
+    },
+    "桌": {
+        "pinyin": "zhuō",
+        "meaning": "table; desk; counter; tableful",
+        "alts": [
+            "卓（rare variant）"
+        ],
+        "notes": "MOE Level 1; furniture (e.g., 桌子, 书桌)"
+    },
+    "椅": {
+        "pinyin": "yǐ; yī",
+        "meaning": "chair; stool; bench; depend on (yī, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; furniture (e.g., 椅子, 餐椅)"
+    },
+    "床": {
+        "pinyin": "chuáng",
+        "meaning": "bed; couch; bedstead; measure word for vehicles/boats",
+        "alts": [
+            "牀"
+        ],
+        "notes": "MOE Level 1; furniture (e.g., 床铺, 病床), traditional 牀"
+    },
+    "被": {
+        "pinyin": "bèi; pī",
+        "meaning": "quilt; blanket; cover; be (passive); wear (pī, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; bedding (e.g., 被子, 棉被), polyphonic"
+    },
+    "枕": {
+        "pinyin": "zhěn",
+        "meaning": "pillow; rest one's head on; lean on",
+        "alts": [
+            "忱（rare variant）"
+        ],
+        "notes": "MOE Level 1; bedding (e.g., 枕头, 枕套)"
+    },
+    "席": {
+        "pinyin": "xí",
+        "meaning": "mat; matting; seat; banquet; Xi (surname)",
+        "alts": [
+            "蓆"
+        ],
+        "notes": "MOE Level 1; bedding (e.g., 席子, 凉席), traditional 蓆"
+    },
+    "灯": {
+        "pinyin": "dēng",
+        "meaning": "lamp; light; lantern; flashlight; turn on light",
+        "alts": [
+            "燈"
+        ],
+        "notes": "MOE Level 1; lighting (e.g., 电灯, 台灯), traditional 燈"
+    },
+    "光": {
+        "pinyin": "guāng",
+        "meaning": "light; ray; brightness; shine; honor; bare",
+        "alts": [],
+        "notes": "MOE Level 1; light core (e.g., 光线, 光明)"
+    },
+    "电": {
+        "pinyin": "diàn",
+        "meaning": "electricity; electric; lightning; telegram; phone call",
+        "alts": [
+            "電"
+        ],
+        "notes": "MOE Level 1; energy (e.g., 电话, 电视), traditional 電"
+    },
+    "视": {
+        "pinyin": "shì",
+        "meaning": "see; watch; look at; vision; television; inspect",
+        "alts": [
+            "視"
+        ],
+        "notes": "MOE Level 1; media (e.g., 电视, 视频), traditional 視"
+    },
+    "机": {
+        "pinyin": "jī; jǐ",
+        "meaning": "machine; engine; opportunity; plane; desk (jǐ, archaic)",
+        "alts": [
+            "機"
+        ],
+        "notes": "MOE Level 1; tech/transport (e.g., 手机, 飞机), traditional 機"
+    },
+    "车": {
+        "pinyin": "chē; jū",
+        "meaning": "car; vehicle; cart; train; chess piece (jū, archaic)",
+        "alts": [
+            "車"
+        ],
+        "notes": "MOE Level 1; transport (e.g., 汽车, 火车), traditional 車"
+    },
+    "路": {
+        "pinyin": "lù",
+        "meaning": "road; path; way; route; journey; method",
+        "alts": [],
+        "notes": "MOE Level 1; transport (e.g., 马路, 公路)"
+    },
+    "走": {
+        "pinyin": "zǒu",
+        "meaning": "walk; go; run; leave; move; travel",
+        "alts": [],
+        "notes": "MOE Level 1; movement (e.g., 走路, 走开)"
+    },
+    "跑": {
+        "pinyin": "pǎo; páo",
+        "meaning": "run; jog; race; escape; bubble (páo, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; movement (e.g., 跑步, 逃跑), polyphonic"
+    },
+    "跳": {
+        "pinyin": "tiào; tiáo",
+        "meaning": "jump; leap; skip; bounce; adjust (tiáo, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; movement (e.g., 跳绳, 跳高), polyphonic"
+    },
+    "行": {
+        "pinyin": "xíng; háng; hàng; héng",
+        "meaning": "walk; go; travel; do; line; row (háng); business (hàng); horizontal (héng, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; movement/business (e.g., 行走, 银行), polyphonic"
+    },
+    "动": {
+        "pinyin": "dòng",
+        "meaning": "move; act; dynamic; change; touch; inspire",
+        "alts": [
+            "動"
+        ],
+        "notes": "MOE Level 1; movement (e.g., 运动, 动作), traditional 動"
+    },
+    "静": {
+        "pinyin": "jìng",
+        "meaning": "quiet; calm; still; peaceful; static; silent",
+        "alts": [],
+        "notes": "MOE Level 1; state (e.g., 安静, 平静), paired with 动"
+    },
+    "公": {
+        "pinyin": "gōng",
+        "meaning": "public; official; fair; male (animal); father's brother",
+        "alts": [],
+        "notes": "MOE Level 1; social (e.g., 公共, 公平)"
+    },
+    "共": {
+        "pinyin": "gòng; gōng",
+        "meaning": "together; common; share; total; offer (gōng, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; social (e.g., 共同, 共有), polyphonic"
+    },
+    "同": {
+        "pinyin": "tóng; tòng",
+        "meaning": "same; together; common; similar; ache (tòng, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; social (e.g., 同学, 相同), polyphonic"
+    },
+    "校": {
+        "pinyin": "xiào; jiào",
+        "meaning": "school; campus; check; correct (jiào)",
+        "alts": [],
+        "notes": "MOE Level 1; education (e.g., 学校, 校园), polyphonic"
+    },
+    "教": {
+        "pinyin": "jiào; jiāo",
+        "meaning": "teach; educate; religion; instruct (jiāo)",
+        "alts": [],
+        "notes": "MOE Level 1; education (e.g., 教育, 教书), polyphonic"
+    },
+    "师": {
+        "pinyin": "shī",
+        "meaning": "teacher; master; expert; division (military)",
+        "alts": [],
+        "notes": "MOE Level 1; education (e.g., 老师, 师傅)"
+    },
+    "生": {
+        "pinyin": "shēng",
+        "meaning": "student; life; live; grow; raw; give birth",
+        "alts": [],
+        "notes": "MOE Level 1; education/life (e.g., 学生, 生活)"
+    },
+    "课": {
+        "pinyin": "kè",
+        "meaning": "class; lesson; course; subject; tax",
+        "alts": [
+            "課"
+        ],
+        "notes": "MOE Level 1; education (e.g., 上课, 课程), traditional 課"
+    },
+    "事": {
+        "pinyin": "shì",
+        "meaning": "thing; matter; affair; business; job",
+        "alts": [],
+        "notes": "MOE Level 1; daily (e.g., 事情, 事业)"
+    },
+    "市": {
+        "pinyin": "shì",
+        "meaning": "city; market; town; municipal",
+        "alts": [],
+        "notes": "MOE Level 1; geography/economy (e.g., 城市, 市场)"
+    },
+    "场": {
+        "pinyin": "chǎng; cháng",
+        "meaning": "field; place; scene; market (cháng); threshing floor (cháng)",
+        "alts": [
+            "場"
+        ],
+        "notes": "MOE Level 1; place (e.g., 场地, 市场), traditional 場"
+    },
+    "城": {
+        "pinyin": "chéng",
+        "meaning": "city; castle; walled town; urban",
+        "alts": [],
+        "notes": "MOE Level 1; geography (e.g., 城市, 城墙)"
+    },
+    "乡": {
+        "pinyin": "xiāng",
+        "meaning": "village; countryside; rural; hometown",
+        "alts": [
+            "鄉"
+        ],
+        "notes": "MOE Level 1; geography (e.g., 乡村, 家乡), traditional 鄉"
+    },
+    "县": {
+        "pinyin": "xiàn",
+        "meaning": "county; district; county-level administrative unit",
+        "alts": [
+            "縣"
+        ],
+        "notes": "MOE Level 1; geography (e.g., 县城, 县长), traditional 縣"
+    },
+    "省": {
+        "pinyin": "shěng; xǐng",
+        "meaning": "province; save; economize; examine (xǐng); reflect (xǐng)",
+        "alts": [],
+        "notes": "MOE Level 1; geography (e.g., 省份, 节省), polyphonic"
+    },
+    "主": {
+        "pinyin": "zhǔ",
+        "meaning": "master; host; main; primary; advocate; owner",
+        "alts": [],
+        "notes": "MOE Level 1; social (e.g., 主人, 主要)"
+    },
+    "要": {
+        "pinyin": "yào; yāo",
+        "meaning": "want; need; important; essential; ask (yāo); demand (yāo)",
+        "alts": [],
+        "notes": "MOE Level 1; social (e.g., 重要, 想要), polyphonic"
+    },
+    "坏": {
+        "pinyin": "huài; pī; pēi",
+        "meaning": "bad; broken; spoil; ruin; peel (pī); embryo (pēi)",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 坏人, 破坏), polyphonic"
+    },
+    "高": {
+        "pinyin": "gāo",
+        "meaning": "high; tall; high-ranking; advanced",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 高兴, 高度)"
+    },
+    "低": {
+        "pinyin": "dī",
+        "meaning": "low; short; lower; humble; degrade",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 高低, 低头)"
+    },
+    "胖": {
+        "pinyin": "pàng; pán",
+        "meaning": "fat; plump; stout; round (pán)",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 胖子, 发胖), polyphonic"
+    },
+    "瘦": {
+        "pinyin": "shòu",
+        "meaning": "thin; lean; emaciated; poor (harvest)",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 瘦子, 瘦小)"
+    },
+    "丑": {
+        "pinyin": "chǒu; chǒu",
+        "meaning": "ugly; ugly person; disgraceful; Chou (Chinese zodiac)",
+        "alts": [
+            "醜"
+        ],
+        "notes": "MOE Level 1; descriptor (e.g., 丑陋, 小丑), traditional 醜"
+    },
+    "新": {
+        "pinyin": "xīn",
+        "meaning": "new; fresh; novel; recent; newly",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 新闻, 新鲜)"
+    },
+    "旧": {
+        "pinyin": "jiù",
+        "meaning": "old; used; former; past; old friend",
+        "alts": [
+            "舊"
+        ],
+        "notes": "MOE Level 1; descriptor (e.g., 旧书, 过去), traditional 舊"
+    },
+    "强": {
+        "pinyin": "qiáng; qiǎng; jiàng",
+        "meaning": "strong; powerful; force (qiǎng); stubborn (jiàng)",
+        "alts": [
+            "強"
+        ],
+        "notes": "MOE Level 1; descriptor (e.g., 强大, 勉强), traditional 強"
+    },
+    "弱": {
+        "pinyin": "ruò",
+        "meaning": "weak; feeble; delicate; inferior; faint",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 弱小, 弱点)"
+    },
+    "快": {
+        "pinyin": "kuài",
+        "meaning": "fast; quick; rapid; pleased; hurry",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 快乐, 快速)"
+    },
+    "慢": {
+        "pinyin": "màn",
+        "meaning": "slow; tardy; leisurely; delay; slow down",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 慢慢, 缓慢)"
+    },
+    "真": {
+        "pinyin": "zhēn",
+        "meaning": "true; real; genuine; sincere; really",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 真实, 真心)"
+    },
+    "假": {
+        "pinyin": "jiǎ; jià",
+        "meaning": "false; fake; borrow; holiday (jià); leave (jià)",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 真假, 假期), polyphonic"
+    },
+    "对": {
+        "pinyin": "duì",
+        "meaning": "correct; right; pair; face; answer; to",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 对错, 对面)"
+    },
+    "错": {
+        "pinyin": "cuò",
+        "meaning": "wrong; mistake; error;交错; mix up",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 错误, 对错)"
+    },
+    "正": {
+        "pinyin": "zhèng; zhēng",
+        "meaning": "correct; right; positive; upright; Zheng (surname); first month (zhēng)",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 正确, 正常), polyphonic"
+    },
+    "反": {
+        "pinyin": "fǎn",
+        "meaning": "opposite; reverse; against; return; counter",
+        "alts": [],
+        "notes": "MOE Level 1; descriptor (e.g., 反对, 正反)"
+    },
+    "我": {
+        "pinyin": "wǒ",
+        "meaning": "I; me; my; myself",
+        "alts": [],
+        "notes": "MOE Level 1 (frequently used); core first-person pronoun in modern Chinese; high-frequency in daily communication, writing, and education (e.g., 我是中国人, 我的书)"
+    },
+    "你": {
+        "pinyin": "nǐ; nǐ",
+        "meaning": "you; your; yourself",
+        "alts": [
+            "妳（classical for female）"
+        ],
+        "notes": "MOE Level 1; core second-person pronoun (e.g., 你好, 你的笔)"
+    },
+    "他": {
+        "pinyin": "tā",
+        "meaning": "he; him; his; other; another",
+        "alts": [
+            "牠（for animals）"
+        ],
+        "notes": "MOE Level 1; third-person pronoun (masculine/general), e.g., 他是学生"
+    },
+    "她": {
+        "pinyin": "tā",
+        "meaning": "she; her; herself",
+        "alts": [],
+        "notes": "MOE Level 1; third-person pronoun (feminine), e.g., 她是老师"
+    },
+    "它": {
+        "pinyin": "tā",
+        "meaning": "it; its; itself (for non-human/non-animal)",
+        "alts": [],
+        "notes": "MOE Level 1; third-person pronoun (inanimate), e.g., 它是猫 (wrong: use 牠 for animals), 它是桌子"
+    },
+    "们": {
+        "pinyin": "men",
+        "meaning": "plural marker for pronouns (e.g., 我们, 你们)",
+        "alts": [
+            "們"
+        ],
+        "notes": "MOE Level 1; suffix (no standalone use), traditional 們"
+    },
+    "这": {
+        "pinyin": "zhè; zhèi",
+        "meaning": "this; these; this one",
+        "alts": [
+            "這"
+        ],
+        "notes": "MOE Level 1; demonstrative pronoun (e.g., 这个, 这里), traditional 這"
+    },
+    "那": {
+        "pinyin": "nà; nǎ; nèi",
+        "meaning": "that; those; which (nǎ); that one (nèi)",
+        "alts": [
+            "那"
+        ],
+        "notes": "MOE Level 1; demonstrative pronoun (e.g., 那个, 那里), polyphonic"
+    },
+    "哪": {
+        "pinyin": "nǎ; něi; na",
+        "meaning": "which; where; what; suffix (na)",
+        "alts": [],
+        "notes": "MOE Level 1; interrogative pronoun (e.g., 哪里, 哪个), polyphonic"
+    },
+    "谁": {
+        "pinyin": "shuí; shéi",
+        "meaning": "who; whom; whose",
+        "alts": [],
+        "notes": "MOE Level 1; interrogative pronoun (e.g., 谁来了, 谁的书)"
+    },
+    "什么": {
+        "pinyin": "shénme; shén me",
+        "meaning": "what; something; anything",
+        "alts": [
+            "甚麼"
+        ],
+        "notes": "MOE Level 1; interrogative (e.g., 你在做什么), traditional 甚麼"
+    },
+    "怎么": {
+        "pinyin": "zěnme; zěn me",
+        "meaning": "how; why; what; how come",
+        "alts": [
+            "怎麼"
+        ],
+        "notes": "MOE Level 1; interrogative (e.g., 怎么了, 怎么做), traditional 怎麼"
+    },
+    "为什么": {
+        "pinyin": "wèishénme; wèi shén me",
+        "meaning": "why; for what reason",
+        "alts": [
+            "為什麼"
+        ],
+        "notes": "MOE Level 1; interrogative (e.g., 你为什么哭), traditional 為什麼"
+    },
+    "哪里": {
+        "pinyin": "nǎlǐ; nǎ lǐ",
+        "meaning": "where; nowhere; polite denial (e.g., 哪里哪里)",
+        "alts": [
+            "哪裡"
+        ],
+        "notes": "MOE Level 1; interrogative (e.g., 你在哪里), traditional 哪裡"
+    },
+    "哪里": {
+        "pinyin": "nǎlǐ; nǎ lǐ",
+        "meaning": "where; nowhere; polite denial (e.g., 哪里哪里)",
+        "alts": [
+            "哪裡"
+        ],
+        "notes": "MOE Level 1; interrogative (e.g., 你在哪里), traditional 哪裡"
+    },
+    "时候": {
+        "pinyin": "shíhou; shí hou",
+        "meaning": "time; moment; when; occasion",
+        "alts": [
+            "時候"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 什么时候), traditional 時候"
+    },
+    "这里": {
+        "pinyin": "zhèlǐ; zhè lǐ",
+        "meaning": "here; this place",
+        "alts": [
+            "這裡"
+        ],
+        "notes": "MOE Level 1; locative (e.g., 我在这里), traditional 這裡"
+    },
+    "那里": {
+        "pinyin": "nàlǐ; nà lǐ",
+        "meaning": "there; that place",
+        "alts": [
+            "那裡"
+        ],
+        "notes": "MOE Level 1; locative (e.g., 他在那里), traditional 那裡"
+    },
+    "现在": {
+        "pinyin": "xiànzài; xiàn zài",
+        "meaning": "now; present; currently; at present",
+        "alts": [
+            "現在"
+        ],
+        "notes": "MOE Level 1; time adverb (e.g., 现在走), traditional 現在"
+    },
+    "今天": {
+        "pinyin": "jīntiān; jīn tiān",
+        "meaning": "today; this day",
+        "alts": [
+            "今天"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 今天下雨)"
+    },
+    "明天": {
+        "pinyin": "míngtiān; míng tiān",
+        "meaning": "tomorrow; the next day",
+        "alts": [
+            "明天"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 明天去学校)"
+    },
+    "昨天": {
+        "pinyin": "zuótiān; zuó tiān",
+        "meaning": "yesterday; the day before",
+        "alts": [
+            "昨天"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 昨天放假)"
+    },
+    "今年": {
+        "pinyin": "jīnnián; jīn nián",
+        "meaning": "this year; current year",
+        "alts": [
+            "今年"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 今年10岁)"
+    },
+    "明年": {
+        "pinyin": "míngnián; míng nián",
+        "meaning": "next year; coming year",
+        "alts": [
+            "明年"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 明年毕业)"
+    },
+    "去年": {
+        "pinyin": "qùnián; qù nián",
+        "meaning": "last year; the previous year",
+        "alts": [
+            "去年"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 去年搬家)"
+    },
+    "星期": {
+        "pinyin": "xīngqī; xīng qī",
+        "meaning": "week; weekday; Sunday (archaic)",
+        "alts": [
+            "星期"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 星期一, 周末)"
+    },
+    "周末": {
+        "pinyin": "zhōumò; zhōu mò",
+        "meaning": "weekend; Saturday and Sunday",
+        "alts": [
+            "週末"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 周末玩), traditional 週末"
+    },
+    "早上": {
+        "pinyin": "zǎoshang; zǎo shang",
+        "meaning": "morning; early morning; a.m.",
+        "alts": [
+            "早上"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 早上吃饭)"
+    },
+    "中午": {
+        "pinyin": "zhōngwǔ; zhōng wǔ",
+        "meaning": "noon; midday; lunchtime",
+        "alts": [
+            "中午"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 中午休息)"
+    },
+    "晚上": {
+        "pinyin": "wǎnshang; wǎn shang",
+        "meaning": "evening; night; p.m.",
+        "alts": [
+            "晚上"
+        ],
+        "notes": "MOE Level 1; time noun (e.g., 晚上看电视)"
+    },
+    "吃饭": {
+        "pinyin": "chīfàn; chī fàn",
+        "meaning": "eat; have a meal; dine",
+        "alts": [
+            "吃飯"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 吃饭了吗), traditional 吃飯"
+    },
+    "喝水": {
+        "pinyin": "hēshuǐ; hē shuǐ",
+        "meaning": "drink water; have a drink",
+        "alts": [
+            "喝水"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 喝水解渴)"
+    },
+    "睡觉": {
+        "pinyin": "shuìjiào; shuì jiào",
+        "meaning": "sleep; go to bed; have a sleep",
+        "alts": [
+            "睡覺"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 睡觉了), traditional 睡覺"
+    },
+    "走路": {
+        "pinyin": "zǒulù; zǒu lù",
+        "meaning": "walk; go on foot; walk along the road",
+        "alts": [
+            "走路"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 走路去学校)"
+    },
+    "说话": {
+        "pinyin": "shuōhuà; shuō huà",
+        "meaning": "speak; talk; say something; chat",
+        "alts": [
+            "說話"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 说话小声点), traditional 說話"
+    },
+    "看书": {
+        "pinyin": "kànshū; kàn shū",
+        "meaning": "read a book; read; study",
+        "alts": [
+            "看書"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 看书学习), traditional 看書"
+    },
+    "写字": {
+        "pinyin": "xiězì; xiě zì",
+        "meaning": "write characters; write; do handwriting",
+        "alts": [
+            "寫字"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 写字漂亮), traditional 寫字"
+    },
+    "打电话": {
+        "pinyin": "dǎdiànhuà; dǎ diàn huà",
+        "meaning": "make a phone call; call; ring up",
+        "alts": [
+            "打電話"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 打电话给妈妈), traditional 打電話"
+    },
+    "看电视": {
+        "pinyin": "kàndiànshì; kàn diàn shì",
+        "meaning": "watch TV; watch television",
+        "alts": [
+            "看電視"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 看电视太久), traditional 看電視"
+    },
+    "听音乐": {
+        "pinyin": "tīngyīnyuè; tīng yīn yuè",
+        "meaning": "listen to music; hear music",
+        "alts": [
+            "聽音樂"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 听音乐放松), traditional 聽音樂"
+    },
+    "玩": {
+        "pinyin": "wán; wàn",
+        "meaning": "play; have fun; amuse; toy with; complete (wàn, archaic)",
+        "alts": [],
+        "notes": "MOE Level 1; verb (e.g., 玩游戏, 玩手机), polyphonic"
+    },
+    "游戏": {
+        "pinyin": "yóuxì; yóu xì",
+        "meaning": "game; play; amusement; video game",
+        "alts": [
+            "遊戲"
+        ],
+        "notes": "MOE Level 1; noun/verb (e.g., 玩游戏), traditional 遊戲"
+    },
+    "学习": {
+        "pinyin": "xuéxí; xué xí",
+        "meaning": "study; learn; learn from; study hard",
+        "alts": [
+            "學習"
+        ],
+        "notes": "MOE Level 1; verb (e.g., 学习中文), traditional 學習"
+    },
+    "工作": {
+        "pinyin": "gōngzuò; gōng zuò",
+        "meaning": "work; job; employment; task; work on",
+        "alts": [
+            "工作"
+        ],
+        "notes": "MOE Level 1; noun/verb (e.g., 工作忙, 找工作)"
+    },
+    "休息": {
+        "pinyin": "xiūxi; xiū xi",
+        "meaning": "rest; break; relax; take a rest",
+        "alts": [
+            "休息"
+        ],
+        "notes": "MOE Level 1; verb/noun (e.g., 休息一下, 休息时间)"
+    },
+    "运动": {
+        "pinyin": "yùndòng; yùn dòng",
+        "meaning": "sport; exercise; move; campaign; motion",
+        "alts": [
+            "運動"
+        ],
+        "notes": "MOE Level 1; noun/verb (e.g., 做运动, 运动有益健康), traditional 運動"
+    },
+    "跑步": {
+        "pinyin": "pǎobù; pǎo bù",
+        "meaning": "run; jog; go for a run; running",
+        "alts": [
+            "跑步"
+        ],
+        "notes": "MOE Level 1; verb/noun (e.g., 早上跑步, 跑步锻炼)"
+    },
+    "游泳": {
+        "pinyin": "yóuyǒng; yóu yǒng",
+        "meaning": "swim; swimming; go swimming",
+        "alts": [
+            "游泳"
+        ],
+        "notes": "MOE Level 1; verb/noun (e.g., 游泳安全, 学游泳)"
+    },
+    "打球": {
+        "pinyin": "dǎqiú; dǎ qiú",
+        "meaning": "play ball; play a ball game (e.g., basketball, ping-pong)",
+        "alts": [
+            "打球"
+        ],
+        "notes": "MOE Level 1; verb phrase (e.g., 打乒乓球, 打篮球)"
+    },
+    "购物": {
+        "pinyin": "gòuwù; gòu wù",
+        "meaning": "shop; go shopping; purchase; buy things",
+        "alts": [
+            "購物"
+        ],
+        "notes": "MOE Level 1; verb/noun (e.g., 网上购物, 购物清单), traditional 購物"
+    },
+    "旅行": {
+        "pinyin": "lǚxíng; lǚ xíng",
+        "meaning": "travel; trip; journey; go on a trip",
+        "alts": [
+            "旅行"
+        ],
+        "notes": "MOE Level 1; verb/noun (e.g., 旅行愉快, 去旅行)"
+    },
+    "旅游": {
+        "pinyin": "lǚyóu; lǚ yóu",
+        "meaning": "tourism; travel; tour; go sightseeing",
+        "alts": [
+            "旅遊"
+        ],
+        "notes": "MOE Level 1; verb/noun (e.g., 旅游景点, 出国旅游), traditional 旅遊"
+    },
+    "朋友": {
+        "pinyin": "péngyǒu; péng yǒu",
+        "meaning": "friend; friendship; pal; buddy",
+        "alts": [
+            "朋友"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 好朋友, 交朋友)"
+    },
+    "家人": {
+        "pinyin": "jiārén; jiā rén",
+        "meaning": "family; family member; relatives; one's people",
+        "alts": [
+            "家人"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 和家人吃饭, 家人健康)"
+    },
+    "父母": {
+        "pinyin": "fùmǔ; fù mǔ",
+        "meaning": "parents; father and mother; parent",
+        "alts": [
+            "父母"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 父母爱我, 孝敬父母)"
+    },
+    "兄弟": {
+        "pinyin": "xiōngdì; xiōng di",
+        "meaning": "brother; brothers; siblings; fraternal",
+        "alts": [
+            "兄弟"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 兄弟俩, 好兄弟)"
+    },
+    "姐妹": {
+        "pinyin": "jiěmèi; jiě mèi",
+        "meaning": "sister; sisters; siblings; sororal",
+        "alts": [
+            "姐妹"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 姐妹情深, 姐妹俩)"
+    },
+    "孩子": {
+        "pinyin": "háizi; hái zi",
+        "meaning": "child; kid; baby; son/daughter; children",
+        "alts": [
+            "孩子"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 小孩子, 孩子的教育)"
+    },
+    "学生": {
+        "pinyin": "xuéshēng; xué shēng",
+        "meaning": "student; pupil; scholar; learner",
+        "alts": [
+            "學生"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 小学生, 好学生), traditional 學生"
+    },
+    "老师": {
+        "pinyin": "lǎoshī; lǎo shī",
+        "meaning": "teacher; master; instructor; mentor",
+        "alts": [
+            "老師"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 尊敬老师, 老师好), traditional 老師"
+    },
+    "医生": {
+        "pinyin": "yīshēng; yī shēng",
+        "meaning": "doctor; physician; medical doctor; medic",
+        "alts": [
+            "醫生"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 看医生, 医生救人), traditional 醫生"
+    },
+    "护士": {
+        "pinyin": "hùshi; hù shi",
+        "meaning": "nurse; nursing; nurse practitioner",
+        "alts": [
+            "護士"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 护士姐姐, 护士工作), traditional 護士"
+    },
+    "警察": {
+        "pinyin": "jǐngchá; jǐng chá",
+        "meaning": "police; policeman; police officer; cop",
+        "alts": [
+            "警察"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 警察叔叔, 报警察)"
+    },
+    "司机": {
+        "pinyin": "sījī; sī jī",
+        "meaning": "driver; chauffeur; motorist; driver (of vehicle)",
+        "alts": [
+            "司機"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 出租车司机, 司机师傅), traditional 司機"
+    },
+    "厨师": {
+        "pinyin": "chúshī; chú shī",
+        "meaning": "chef; cook; culinary artist; kitchener",
+        "alts": [
+            "廚師"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 厨师做菜, 大厨师), traditional 廚師"
+    },
+    "老板": {
+        "pinyin": "lǎobǎn; lǎo bǎn",
+        "meaning": "boss; owner; employer; manager",
+        "alts": [
+            "老板"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 见老板, 老板好)"
+    },
+    "员工": {
+        "pinyin": "yuángōng; yuán gōng",
+        "meaning": "employee; staff; worker; personnel",
+        "alts": [
+            "員工"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 公司员工, 员工福利), traditional 員工"
+    },
+    "经理": {
+        "pinyin": "jīnglǐ; jīng lǐ",
+        "meaning": "manager; director; manager-in-charge; administer",
+        "alts": [
+            "經理"
+        ],
+        "notes": "MOE Level 1; noun/verb (e.g., 经理批准, 部门经理), traditional 經理"
+    },
+    "老板": {
+        "pinyin": "lǎobǎn; lǎo bǎn",
+        "meaning": "boss; owner; employer; manager",
+        "alts": [
+            "老板"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 见老板, 老板好)"
+    },
+    "公司": {
+        "pinyin": "gōngsī; gōng sī",
+        "meaning": "company; corporation; firm; enterprise",
+        "alts": [
+            "公司"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 大公司, 进公司)"
+    },
+    "工厂": {
+        "pinyin": "gōngchǎng; gōng chǎng",
+        "meaning": "factory; plant; mill; workshop; manufacturing plant",
+        "alts": [
+            "工廠"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 工厂上班, 玩具工厂), traditional 工廠"
+    },
+    "学校": {
+        "pinyin": "xuéxiào; xué xiào",
+        "meaning": "school; educational institution; campus; schoolhouse",
+        "alts": [
+            "學校"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 小学校, 学校生活), traditional 學校"
+    },
+    "医院": {
+        "pinyin": "yīyuàn; yī yuàn",
+        "meaning": "hospital; medical center; clinic; infirmary",
+        "alts": [
+            "醫院"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 去医院, 大医院), traditional 醫院"
+    },
+    "商店": {
+        "pinyin": "shāngdiàn; shāng diàn",
+        "meaning": "shop; store; commercial establishment; boutique",
+        "alts": [
+            "商店"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 小商店, 商店关门)"
+    },
+    "超市": {
+        "pinyin": "chāoshì; chāo shì",
+        "meaning": "supermarket; hypermarket; grocery store; supermarket chain",
+        "alts": [
+            "超市"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 逛超市, 超市买东西)"
+    },
+    "饭店": {
+        "pinyin": "fàndiàn; fàn diàn",
+        "meaning": "restaurant; hotel; diner; eatery; guesthouse",
+        "alts": [
+            "飯店"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 去饭店吃饭, 大饭店), traditional 飯店"
+    },
+    "酒店": {
+        "pinyin": "jiǔdiàn; jiǔ diàn",
+        "meaning": "hotel; pub; restaurant; liquor store; inn",
+        "alts": [
+            "酒店"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 住酒店, 五星级酒店)"
+    },
+    "公园": {
+        "pinyin": "gōngyuán; gōng yuán",
+        "meaning": "park; public garden; municipal park; parkland",
+        "alts": [
+            "公園"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 逛公园, 公园玩), traditional 公園"
+    },
+    "动物园": {
+        "pinyin": "dòngwùyuán; dòng wù yuán",
+        "meaning": "zoo; zoological garden; animal park; menagerie",
+        "alts": [
+            "動物園"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 去动物园, 动物园看熊猫), traditional 動物園"
+    },
+    "电影院": {
+        "pinyin": "diànyǐngyuàn; diàn yǐng yuàn",
+        "meaning": "cinema; movie theater; film house; movie house",
+        "alts": [
+            "電影院"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 看电影, 电影院买票), traditional 電影院"
+    },
+    "图书馆": {
+        "pinyin": "túshūguǎn; tú shū guǎn",
+        "meaning": "library; bibliotheca; reading room; public library",
+        "alts": [
+            "圖書館"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 图书馆看书, 学校图书馆), traditional 圖書館"
+    },
+    "博物馆": {
+        "pinyin": "bówùguǎn; bó wù guǎn",
+        "meaning": "museum; museum of history; art museum; exhibition hall",
+        "alts": [
+            "博物館"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 博物馆参观, 历史博物馆), traditional 博物館"
+    },
+    "车站": {
+        "pinyin": "chēzhàn; chē zhàn",
+        "meaning": "station; bus stop; train station; depot; terminal",
+        "alts": [
+            "車站"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 火车站, 公交车站), traditional 車站"
+    },
+    "机场": {
+        "pinyin": "jīchǎng; jī chǎng",
+        "meaning": "airport; airfield; aerodrome; airstrip; aviation hub",
+        "alts": [
+            "機場"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 去机场, 国际机场), traditional 機場"
+    },
+    "地铁": {
+        "pinyin": "dìtiě; dì tiě",
+        "meaning": "subway; metro; underground railway; tube; rapid transit",
+        "alts": [
+            "地鐵"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 坐地铁, 地铁快), traditional 地鐵"
+    },
+    "公交": {
+        "pinyin": "gōngjiāo; gōng jiāo",
+        "meaning": "public transportation; bus; public transit; mass transit",
+        "alts": [
+            "公交"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 坐公交, 公交站)"
+    },
+    "出租车": {
+        "pinyin": "chūzūchē; chū zū chē",
+        "meaning": "taxi; cab; taxi cab; hack; hired car",
+        "alts": [
+            "出租車"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 打出租车, 出租车司机), traditional 出租車"
+    },
+    "自行车": {
+        "pinyin": "zìxíngchē; zì xíng chē",
+        "meaning": "bicycle; bike; cycle; pushbike; pedal bike",
+        "alts": [
+            "自行車"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 骑自行车, 共享单车), traditional 自行車"
+    },
+    "汽车": {
+        "pinyin": "qìchē; qì chē",
+        "meaning": "car; automobile; motor vehicle; auto; car vehicle",
+        "alts": [
+            "汽車"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 开汽车, 小汽车), traditional 汽車"
+    },
+    "火车": {
+        "pinyin": "huǒchē; huǒ chē",
+        "meaning": "train; railway train; locomotive; railcar; express train",
+        "alts": [
+            "火車"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 坐火车, 火车快), traditional 火車"
+    },
+    "飞机": {
+        "pinyin": "fēijī; fēi jī",
+        "meaning": "plane; airplane; aircraft; jet; aeroplane",
+        "alts": [
+            "飛機"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 坐飞机, 大飞机), traditional 飛機"
+    },
+    "船": {
+        "pinyin": "chuán; shuān",
+        "meaning": "boat; ship; vessel; craft; ferry; tie (shuān, archaic)",
+        "alts": [
+            "船"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 坐船, 大船), polyphonic"
+    },
+    "桥": {
+        "pinyin": "qiáo",
+        "meaning": "bridge; overpass; viaduct; bridgework; pontoon bridge",
+        "alts": [
+            "橋"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 过桥, 大桥), traditional 橋"
+    },
+    "路": {
+        "pinyin": "lù",
+        "meaning": "road; path; way; route; journey; method",
+        "alts": [],
+        "notes": "MOE Level 1; noun (e.g., 马路, 公路)"
+    },
+    "街": {
+        "pinyin": "jiē",
+        "meaning": "street; avenue; road; block; downtown",
+        "alts": [
+            "街"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 街上, 逛街)"
+    },
+    "楼": {
+        "pinyin": "lóu; lǚ",
+        "meaning": "building; tower; floor; storey; mansion; walk (lǚ, archaic)",
+        "alts": [
+            "樓"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 高楼, 楼上), traditional 樓, polyphonic"
+    },
+    "房": {
+        "pinyin": "fáng",
+        "meaning": "house; room; building; property; flat; apartment",
+        "alts": [
+            "房"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 房子, 房间)"
+    },
+    "屋": {
+        "pinyin": "wū",
+        "meaning": "house; room; building; hut; cottage; chamber",
+        "alts": [
+            "屋"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 屋子, 房屋)"
+    },
+    "门": {
+        "pinyin": "mén",
+        "meaning": "door; gate; entrance; portal; doorway; valve",
+        "alts": [
+            "門"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 开门, 门口), traditional 門"
+    },
+    "窗": {
+        "pinyin": "chuāng",
+        "meaning": "window; casement; pane; windowpane; bay window",
+        "alts": [
+            "窗"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 窗户, 开窗)"
+    },
+    "墙": {
+        "pinyin": "qiáng",
+        "meaning": "wall; partition; barrier; rampart; walling",
+        "alts": [
+            "牆"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 墙画, 墙上), traditional 牆"
+    },
+    "地板": {
+        "pinyin": "dìbǎn; dì bǎn",
+        "meaning": "floor; floorboard; flooring; ground; deck",
+        "alts": [
+            "地板"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 地板干净, 木地板)"
+    },
+    "天花板": {
+        "pinyin": "tiānhuābǎn; tiān huā bǎn",
+        "meaning": "ceiling; roof; overhead; ceiling board; canopy",
+        "alts": [
+            "天花板"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 天花板高, 天花板漏水)"
+    },
+    "厨房": {
+        "pinyin": "chúfáng; chú fáng",
+        "meaning": "kitchen; cookhouse; galley; kitchenette; pantry",
+        "alts": [
+            "廚房"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 厨房做饭, 小厨房), traditional 廚房"
+    },
+    "卫生间": {
+        "pinyin": "wèishēngjiān; wèi shēng jiān",
+        "meaning": "toilet; bathroom; washroom; restroom; lavatory",
+        "alts": [
+            "衛生間"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 卫生间洗手, 公共卫生间), traditional 衛生間"
+    },
+    "卧室": {
+        "pinyin": "wòshì; wò shì",
+        "meaning": "bedroom; sleeping room; chamber; bedchamber; dormitory",
+        "alts": [
+            "臥室"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 卧室睡觉, 大卧室), traditional 臥室"
+    },
+    "客厅": {
+        "pinyin": "kètīng; kè tīng",
+        "meaning": "living room; parlour; sitting room; lounge; reception room",
+        "alts": [
+            "客廳"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 客厅看电视, 客厅大), traditional 客廳"
+    },
+    "阳台": {
+        "pinyin": "yángtái; yáng tái",
+        "meaning": "balcony; veranda; terrace; sunporch; loggia",
+        "alts": [
+            "陽台"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 阳台晒太阳, 小阳台), traditional 陽台"
+    },
+    "衣服": {
+        "pinyin": "yīfu; yī fu",
+        "meaning": "clothes; clothing; dress; garment; attire",
+        "alts": [
+            "衣服"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 穿衣服, 新衣服)"
+    },
+    "裤子": {
+        "pinyin": "kùzi; kù zi",
+        "meaning": "trousers; pants; slacks; jeans; breeches",
+        "alts": [
+            "褲子"
+        ],
+        "notes": "MOE Level 1; noun (e.g., 裤子长)"
+    }
+}

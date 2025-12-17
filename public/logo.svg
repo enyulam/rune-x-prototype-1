@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve">
+<defs>
+  <style type="text/css">
+    .rune-primary{fill:#3B82F6;stroke:#1E40AF;stroke-width:0.5;stroke-miterlimit:10;}
+    .rune-secondary{fill:#60A5FA;}
+    .rune-accent{fill:#93C5FD;}
+    .rune-breathe {
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+  </style>
+</defs>
+
+<g>
+  <!-- Background circle -->
+  <circle class="rune-primary" cx="50" cy="50" r="45"/>
+  
+  <!-- Ancient rune/symbol design representing interpretation -->
+  <g class="rune-breathe">
+    <!-- Central glyph representing ancient script -->
+    <path class="rune-secondary" d="M50,25 L45,40 L35,45 L30,50 L35,55 L45,60 L50,75 L55,60 L65,55 L70,50 L65,45 L55,40 Z"/>
+    
+    <!-- Decorative elements representing reconstruction -->
+    <circle class="rune-accent" cx="50" cy="50" r="8"/>
+    <path class="rune-accent" d="M50,35 L50,65 M35,50 L65,50"/>
+  </g>
+  
+  <!-- Text label (optional, can be hidden if needed) -->
+  <text x="50" y="90" font-family="Arial, sans-serif" font-size="8" fill="#1E40AF" text-anchor="middle" font-weight="bold">RUNE-X</text>
+</g>
+</svg>
