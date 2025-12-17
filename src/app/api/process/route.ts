@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         data: { status: 'FAILED' }
       })
       return NextResponse.json(
-        {
+        { 
           error: 'Inference failed',
           details: text || `Status ${inferenceResp.status}`
         },
@@ -138,13 +138,13 @@ export async function POST(request: NextRequest) {
           }
         })
       } else if (meaning && (!glyphRecord.description || glyphRecord.description.includes('Character:'))) {
-        await db.glyph.update({
-          where: { id: glyphRecord.id },
-          data: {
+          await db.glyph.update({
+            where: { id: glyphRecord.id },
+            data: {
             description: meaning,
             confidence: Math.max(glyphRecord.confidence || 0, confidence)
-          }
-        })
+            }
+          })
       }
 
       const match = await db.glyphMatch.create({
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     // Mark completed and store metadata
     await db.upload.update({
       where: { id: uploadId },
-      data: {
+      data: { 
         status: 'COMPLETED',
         processedAt: new Date(),
         scriptType: scriptName,
