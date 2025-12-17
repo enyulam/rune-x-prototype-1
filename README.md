@@ -6,14 +6,22 @@ An advanced multimodal AI platform for ancient script interpretation, reconstruc
 
 ## 🚧 Current Status
 
-**Active OCR Engine**: EasyOCR with Chinese Simplified (`ch_sim`) and English (`en`) language support.
+**Hybrid OCR System**: The platform uses a dual-engine OCR approach combining EasyOCR and PaddleOCR for enhanced accuracy and reliability.
 
-The platform uses a FastAPI backend service for OCR processing with 14 different preprocessing and detection strategies to maximize text detection accuracy. The system includes:
-- **14 OCR Strategies**: Multiple preprocessing approaches (inversion, rotation, upscaling, contrast enhancement, morphological operations)
-- **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries
-- **Robust Image Processing**: Automatic preprocessing for small images, contrast enhancement, and padding
+The platform uses a FastAPI backend service with a **hybrid OCR system** that runs both EasyOCR and PaddleOCR in parallel, then fuses their outputs at the character level. This approach provides:
+- **Dual OCR Engines**: EasyOCR (Chinese Simplified + English) and PaddleOCR (Chinese) run simultaneously
+- **Character-Level Fusion**: Results from both engines are aligned using IoU-based matching and fused, preserving all character candidates
+- **Enhanced Accuracy**: Multiple hypotheses per character position improve recognition of difficult or stylized text
+- **Robust Image Preprocessing**: Automatic preprocessing (upscaling, contrast enhancement, padding) optimizes images for OCR
+- **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries including meanings, alternatives, and contextual notes
 
-**Note**: Some highly stylized handwriting or unusual image formats may still pose challenges. See `QUICK_START_GUIDE.md` for detailed setup instructions.
+**Key Features**:
+- Parallel OCR processing for faster results
+- Character-level uncertainty preservation (all candidates kept)
+- Reading order sorting (top-to-bottom, left-to-right)
+- Comprehensive error handling and fallback mechanisms
+
+**Note**: The hybrid system significantly improves accuracy over single-engine approaches. See `QUICK_START_GUIDE.md` for detailed setup instructions.
 
 ## ✨ Overview
 
@@ -53,7 +61,9 @@ Rune-X integrates three technically robust components:
 - **🗄️ Prisma** - Next-generation Node.js and TypeScript ORM
 - **🔐 NextAuth.js** - Complete open-source authentication solution
 - **🐍 FastAPI** - Modern Python web framework for OCR inference service
-- **👁️ EasyOCR** - OCR engine for Chinese handwriting recognition
+- **👁️ Hybrid OCR System** - EasyOCR + PaddleOCR running in parallel with character-level fusion
+  - **EasyOCR** - Chinese Simplified (`ch_sim`) and English support
+  - **PaddleOCR** - Chinese text recognition with advanced models
 
 ### 🎨 Advanced UI Features
 - **📊 TanStack Table** - Headless UI for building tables and datagrids
@@ -73,7 +83,8 @@ Rune-X integrates three technically robust components:
 - **Node.js 18+** and npm
 - **Python 3.8+** and pip
 - **SQLite** (included with Node.js)
-- **PyTorch** (for EasyOCR - CPU version is fine)
+- **PyTorch** (for EasyOCR - CPU version is fine, install separately)
+- **PaddlePaddle** (for PaddleOCR - CPU version, installed via requirements.txt)
 
 ### Setup
 
@@ -245,13 +256,21 @@ cd services/inference
 python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-The service uses EasyOCR with Chinese Simplified (`ch_sim`) and English (`en`) language models. It implements 14 different preprocessing and detection strategies to maximize OCR accuracy for various image types (vertical text, white-on-black, stylized handwriting, etc.).
+The service uses a **hybrid OCR system** combining EasyOCR and PaddleOCR engines that run in parallel on the same preprocessed image. Results are fused at the character level using IoU-based alignment, preserving all character hypotheses from both engines.
 
 **Key Features:**
-- Automatic image preprocessing (upscaling, contrast enhancement, padding)
-- Multiple OCR strategies with different parameters
-- Dictionary-based translation with 276+ Chinese character entries
-- Robust error handling and fallback mechanisms
+- **Dual OCR Engines**: EasyOCR (ch_sim + en) and PaddleOCR (ch) run simultaneously
+- **Character-Level Fusion**: Results aligned using bounding box overlap (IoU) and fused with all candidates preserved
+- **Parallel Processing**: Both engines process images concurrently for faster results
+- **Automatic Image Preprocessing**: Upscaling, contrast enhancement, padding for optimal OCR accuracy
+- **Dictionary-Based Translation**: 276+ Chinese character entries with meanings, alternatives, and notes
+- **Robust Error Handling**: Graceful fallback if one engine fails, comprehensive error messages
+- **Reading Order Preservation**: Characters sorted top-to-bottom, left-to-right
+
+**OCR Engine Details:**
+- **EasyOCR**: Chinese Simplified (`ch_sim`) and English (`en`) language support
+- **PaddleOCR**: Chinese text recognition with PP-OCRv5 models (detection + recognition)
+- **Fusion Algorithm**: IoU-based alignment with configurable threshold (default: 0.3)
 
 ### Building for Production
 
