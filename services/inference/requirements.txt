@@ -13,10 +13,36 @@ easyocr==1.7.1
 paddlepaddle>=2.6.1
 paddleocr>=2.7.0.3
 
-# Note: EasyOCR requires torch and torchvision
+# Neural Machine Translation (MarianMT)
+# Provides sentence-level translation using Helsinki-NLP/opus-mt-zh-en model
+transformers>=4.57.3
+sacremoses>=0.1.1  # Recommended for MarianMT tokenization
+
+# Qwen LLM Refinement
+# Qwen2.5-1.5B-Instruct model for refining MarianMT translations
+# Model downloads automatically on first use (~3GB from HuggingFace)
+# Requires transformers (already listed above)
+accelerate>=0.30.0  # Required for device_map="auto" when using CUDA
+
+# Note: EasyOCR, transformers, and Qwen require torch and torchvision
 # Install appropriate torch build for your Python/OS (CPU-only example):
 # torch>=2.0.0
 # torchvision>=0.15.0
 # 
 # For GPU support, install CUDA-enabled versions:
 # See: https://pytorch.org/get-started/locally/
+#
+# First-time use:
+# - MarianMT model (~300MB) downloads automatically from HuggingFace
+# - Qwen2.5-1.5B model (~3GB) downloads automatically from HuggingFace
+#
+# Installation order recommended:
+# 1. Install torch/torchvision first (CPU or CUDA version)
+# 2. pip install -r requirements.txt
+# 3. Models will download automatically on first use
+#
+# Total disk space required (after first use):
+# - OCR models: ~500MB (EasyOCR + PaddleOCR)
+# - MarianMT: ~300MB
+# - Qwen2.5-1.5B: ~3GB
+# - Total: ~4GB

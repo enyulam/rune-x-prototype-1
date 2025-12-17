@@ -20,6 +20,8 @@ import numpy as np
 import easyocr
 
 from translator import get_translator
+from sentence_translator import get_sentence_translator
+from qwen_refiner import get_qwen_refiner
 
 # Configure logging
 logging.basicConfig(
@@ -82,7 +84,10 @@ class Glyph(BaseModel):
 
 class InferenceResponse(BaseModel):
     text: str
-    translation: str
+    translation: str  # Dictionary-based character-level translation
+    sentence_translation: Optional[str] = None  # Neural sentence-level translation (MarianMT)
+    refined_translation: Optional[str] = None  # Qwen-refined translation
+    qwen_status: Optional[str] = None  # Status: "available", "unavailable", "failed", "skipped"
     confidence: float
     glyphs: List[Glyph]
     unmapped: Optional[List[str]] = None
@@ -657,10 +662,12 @@ def fuse_character_candidates(fused_positions: List[FusedPosition]) -> Tuple[Lis
     return glyphs, full_text
 
 
-# Initialize OCR engines and translator
+# Initialize OCR engines and translators
 easyocr_reader = _load_easyocr()
 paddleocr_reader = _load_paddleocr()
-translator = get_translator()
+translator = get_translator()  # Dictionary-based translator
+sentence_translator = get_sentence_translator()  # Neural sentence translator (MarianMT)
+qwen_refiner = get_qwen_refiner()  # Qwen LLM refiner
 
 if easyocr_reader is None:
     logger.warning("EasyOCR not available. OCR functionality will be limited.")
@@ -672,6 +679,16 @@ else:
     logger.info("OCR service ready (EasyOCR: %s, PaddleOCR: %s)",
                 "available" if easyocr_reader else "unavailable",
                 "available" if paddleocr_reader else "unavailable")
+
+if sentence_translator is None:
+    logger.warning("Sentence translator not available. Install transformers and torch for neural translation.")
+else:
+    logger.info("Sentence translator ready (MarianMT)")
+
+if qwen_refiner is None:
+    logger.warning("Qwen refiner not available. Install transformers and torch for translation refinement.")
+else:
+    logger.info("Qwen refiner ready (Qwen2.5-1.5B-Instruct)")
 
 
 @app.get("/health")
@@ -690,14 +707,32 @@ def health():
         }
     }
     
+    translation_status = {
+        "marianmt": {
+            "available": bool(sentence_translator and sentence_translator.is_available()),
+            "status": "ready" if (sentence_translator and sentence_translator.is_available()) else "not_installed"
+        },
+        "qwen_refiner": {
+            "available": bool(qwen_refiner and qwen_refiner.is_available()),
+            "status": "ready" if (qwen_refiner and qwen_refiner.is_available()) else "not_installed",
+            "model": "Qwen2.5-1.5B-Instruct" if qwen_refiner else None
+        }
+    }
+    
     if not easyocr_reader:
         ocr_status["easyocr"]["message"] = "EasyOCR not available. Install with: pip install easyocr torch torchvision"
     if not paddleocr_reader:
         ocr_status["paddleocr"]["message"] = "PaddleOCR not available. Install with: pip install paddlepaddle paddleocr"
     
+    if not sentence_translator or not sentence_translator.is_available():
+        translation_status["marianmt"]["message"] = "MarianMT not available. Install with: pip install transformers torch"
+    if not qwen_refiner or not qwen_refiner.is_available():
+        translation_status["qwen_refiner"]["message"] = "Qwen refiner not available. Install with: pip install transformers torch"
+    
     return {
         "status": "ok",
         "ocr_engines": ocr_status,
+        "translation_engines": translation_status,
         "dictionary": {
             "entries": stats["total_entries"],
             "entries_with_alts": stats["entries_with_alts"],
@@ -727,6 +762,9 @@ async def process_image(file: UploadFile = File(...)):
     Raises:
         HTTPException: For various error conditions
     """
+    logger.info("=== Received image processing request ===")
+    logger.info("File: %s, Content-Type: %s", file.filename, file.content_type)
+    
     # Validate file type
     if file.content_type not in SUPPORTED_FORMATS and file.content_type != "application/octet-stream":
         raise HTTPException(
@@ -896,9 +934,58 @@ async def process_image(file: UploadFile = File(...)):
     
     logger.info("Processing complete: %d glyphs, confidence: %.2f", len(enriched_glyphs), avg_confidence)
     
+    # Log the extracted OCR text for debugging
+    logger.info("Extracted OCR text (first 200 chars): %s", full_text[:200] if full_text else "Empty")
+    logger.info("Extracted OCR text length: %d characters", len(full_text))
+    
+    # Perform sentence-level neural translation (MarianMT)
+    sentence_translation = None
+    if sentence_translator and sentence_translator.is_available():
+        try:
+            logger.info("Calling MarianMT translator with text: %s", full_text[:100] if full_text else "Empty")
+            sentence_translation = sentence_translator.translate(full_text)
+            logger.info("Sentence translation completed: %s", sentence_translation[:200] if sentence_translation else "None")
+        except Exception as e:
+            logger.error("Sentence translation failed: %s", e)
+            sentence_translation = None
+    else:
+        logger.debug("Sentence translator not available, skipping neural translation")
+    
+    # Perform Qwen refinement on MarianMT translation
+    refined_translation = None
+    qwen_status = None
+    
+    if sentence_translation and qwen_refiner and qwen_refiner.is_available():
+        try:
+            logger.info("Starting Qwen refinement of MarianMT translation...")
+            refined_translation = qwen_refiner.refine_translation_with_qwen(
+                nmt_translation=sentence_translation,
+                ocr_text=full_text
+            )
+            if refined_translation:
+                logger.info("Qwen refinement completed: %s", refined_translation[:50])
+                qwen_status = "available"
+            else:
+                logger.warning("Qwen refinement returned None, using MarianMT translation")
+                qwen_status = "failed"
+        except Exception as e:
+            logger.error("Qwen refinement failed: %s", e)
+            refined_translation = None
+            qwen_status = "failed"
+    else:
+        if not sentence_translation:
+            logger.debug("No MarianMT translation available, skipping Qwen refinement")
+            qwen_status = "skipped"
+        elif not qwen_refiner or not qwen_refiner.is_available():
+            logger.debug("Qwen refiner not available, skipping refinement")
+            qwen_status = "unavailable"
+    
     return InferenceResponse(
         text=full_text,
-        translation=translation_result.get("translation", ""),
+        translation=translation_result.get("translation", ""),  # Dictionary-based
+        sentence_translation=sentence_translation,  # Neural sentence translation (MarianMT)
+        refined_translation=refined_translation,  # Qwen-refined translation
+        qwen_status=qwen_status,  # Status: "available", "unavailable", "failed", "skipped"
         confidence=avg_confidence,
         glyphs=enriched_glyphs,
         unmapped=translation_result.get("unmapped", []),

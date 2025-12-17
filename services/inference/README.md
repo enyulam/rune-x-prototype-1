@@ -1,14 +1,17 @@
 # Rune-X Inference Service
 
-FastAPI service for Chinese handwriting OCR with hybrid OCR system and dictionary-based translation.
+FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier translation (dictionary + MarianMT + Qwen), and comprehensive 9-step image preprocessing pipeline.
 
 ## Features
 
 - **Hybrid OCR System**: Runs EasyOCR and PaddleOCR in parallel, then fuses results at character level
 - **Character-Level Fusion**: Preserves all character hypotheses from both engines using IoU-based alignment
-- **Translation**: Dictionary-based rule translation with per-character meanings
+- **Three-Tier Translation System**: 
+  - **Dictionary-Based Translation**: Character-level meanings from custom dictionary (276+ entries)
+  - **Neural Sentence Translation**: Context-aware sentence-level translation using MarianMT (Helsinki-NLP/opus-mt-zh-en)
+  - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
 - **Dictionary**: JSON-based character dictionary with 276+ entries (meanings, alternatives, notes)
-- **Image Preprocessing**: Automatic validation, resizing, contrast enhancement, and format conversion
+- **Image Preprocessing**: Comprehensive preprocessing pipeline including format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, and adaptive padding
 - **Error Handling**: Comprehensive error messages and validation with graceful fallback
 - **Performance**: Optimized for various image sizes with automatic resizing
 
@@ -54,7 +57,10 @@ pip install -r requirements.txt
 **Note**: 
 - EasyOCR requires PyTorch and torchvision (install separately based on your system)
 - PaddleOCR will automatically download model files on first use (requires internet connection, ~200-300MB)
+- MarianMT (transformers) will download translation model on first use (~300MB from HuggingFace)
+- Qwen2.5-1.5B-Instruct will download on first use (~3GB from HuggingFace)
 - Both OCR engines will initialize on first request (takes 20-60 seconds)
+- Translation engines (MarianMT, Qwen) load models lazily (on first translation request)
 
 2. **Install PyTorch** (required for EasyOCR):
 ```bash
@@ -67,7 +73,7 @@ pip install torch torchvision
 
 3. **Verify installation**:
 ```bash
-python -c "import easyocr; import paddleocr; print('Both OCR engines installed successfully')"
+python -c "import easyocr; import paddleocr; from transformers import MarianMTModel, MarianTokenizer, AutoModelForCausalLM; import accelerate; print('All dependencies installed successfully')"
 ```
 
 4. **Dictionary**: The dictionary file is located at `data/dictionary.json`. 
@@ -123,6 +129,17 @@ Health check endpoint. Returns status of both OCR engines and dictionary.
       "status": "ready"
     }
   },
+  "translation_engines": {
+    "marianmt": {
+      "available": true,
+      "status": "ready"
+    },
+    "qwen_refiner": {
+      "available": true,
+      "status": "ready",
+      "model": "Qwen2.5-1.5B-Instruct"
+    }
+  },
   "dictionary": {
     "entries": 276,
     "entries_with_alts": 188,
@@ -152,8 +169,11 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
 **Response**:
 ```json
 {
-  "text": "我",
-  "translation": "I; me; myself; we; our",
+  "text": "我爱你",
+  "translation": "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself",
+  "sentence_translation": "I love you",
+  "refined_translation": "I love you",
+  "qwen_status": "available",
   "confidence": 0.92,
   "glyphs": [
     {
@@ -161,6 +181,18 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
       "bbox": [10, 20, 50, 50],
       "confidence": 0.92,
       "meaning": "I; me; myself; we; our"
+    },
+    {
+      "symbol": "爱",
+      "bbox": [60, 20, 100, 50],
+      "confidence": 0.88,
+      "meaning": "love; affection; like; care for; cherish"
+    },
+    {
+      "symbol": "你",
+      "bbox": [110, 20, 150, 50],
+      "confidence": 0.90,
+      "meaning": "you; your; yourself"
     }
   ],
   "unmapped": [],
@@ -169,13 +201,30 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
 }
 ```
 
+**Translation Fields**:
+- `translation`: Dictionary-based character-level translation (concatenated meanings)
+- `sentence_translation`: Neural sentence-level translation using MarianMT (context-aware, natural English)
+- `refined_translation`: Qwen LLM-refined translation (improved coherence, OCR noise corrected)
+- `qwen_status`: Status of Qwen refinement ("available", "unavailable", "failed", "skipped")
+
 **Processing Flow**:
-1. Image preprocessing (upscaling, contrast, padding)
+1. Image preprocessing (9-step pipeline):
+   - Format validation (JPEG/PNG/WEBP only)
+   - Dimension validation (50×50 to 4000×4000 pixels)
+   - Large image resizing (proportional, max 4000px)
+   - Color mode conversion (to RGB)
+   - Small image upscaling (minimum 300px)
+   - Contrast enhancement (1.3×)
+   - Sharpness enhancement (1.2×)
+   - Padding addition (50px, adaptive color based on brightness)
+   - Array conversion and validation
 2. Parallel OCR execution (EasyOCR + PaddleOCR)
 3. Result normalization and alignment
 4. Character-level fusion
-5. Dictionary lookup and translation
-6. Response generation
+5. Dictionary lookup and character-level translation
+6. Neural sentence-level translation (MarianMT)
+7. Qwen LLM refinement of MarianMT translation (if available)
+8. Response generation
 
 ## Hybrid OCR Details
 
@@ -204,6 +253,89 @@ Both OCR engines return results in a normalized format:
 - No majority voting or candidate discarding
 - Highest confidence candidate selected as primary for each position
 - Multiple candidates available for uncertainty analysis
+
+## Translation System
+
+### Three-Tier Translation Approach
+
+The service provides three complementary translation methods:
+
+1. **Dictionary-Based Translation** (`translation` field):
+   - Character-by-character lookup from `dictionary.json`
+   - Concatenates meanings with ` | ` separator
+   - Fast, deterministic, preserves all character meanings
+   - Example: "我 | 爱 | 你" → "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"
+
+2. **Neural Sentence Translation** (`sentence_translation` field):
+   - Uses MarianMT model (Helsinki-NLP/opus-mt-zh-en)
+   - Processes entire sentence as context
+   - Produces natural, grammatically correct English
+   - Example: "我爱你" → "I love you"
+   - Lazy-loaded (model downloads on first use, ~300MB)
+   - Falls back gracefully if unavailable
+
+3. **LLM Refinement** (`refined_translation` field):
+   - Uses Qwen2.5-1.5B-Instruct model
+   - Refines MarianMT translation output
+   - Corrects OCR noise-induced mistranslations
+   - Improves contextual coherence and fluency
+   - Preserves meaning while enhancing readability
+   - Example: MarianMT "I love you" → Qwen "I love you" (improved coherence)
+   - Lazy-loaded (model downloads on first use, ~3GB)
+   - Falls back to MarianMT translation if unavailable
+
+### Translation Flow
+
+1. After OCR extraction and character fusion
+2. Dictionary lookup for each character → `translation` field
+3. Neural translation of full text → `sentence_translation` field
+4. Qwen LLM refinement of MarianMT translation → `refined_translation` field
+5. All three included in response (if available)
+
+## Image Preprocessing Pipeline
+
+The preprocessing pipeline performs the following operations in sequence:
+
+1. **Format Validation**
+   - Validates image format (JPEG, PNG, WEBP only)
+   - Raises HTTPException (400) if format is unsupported
+
+2. **Dimension Validation**
+   - Minimum size: 50×50 pixels
+   - Maximum size: 4000×4000 pixels
+   - Raises HTTPException (400) if too small
+
+3. **Large Image Resizing**
+   - If width or height > 4000px, proportionally resizes to fit within 4000×4000px
+   - Maintains aspect ratio
+   - Uses LANCZOS resampling
+
+4. **Color Mode Conversion**
+   - Converts non-RGB images to RGB
+   - Ensures consistent color space for OCR engines
+
+5. **Small Image Upscaling**
+   - If width < 300px or height < 300px, upscales to minimum 300px
+   - Uses LANCZOS resampling for quality
+   - Improves OCR accuracy for small images
+
+6. **Contrast Enhancement**
+   - Increases contrast by 1.3× using `ImageEnhance.Contrast`
+   - Improves text-background separation
+
+7. **Sharpness Enhancement**
+   - Increases sharpness by 1.2× using `ImageEnhance.Sharpness`
+   - Enhances edge definition for better character recognition
+
+8. **Adaptive Padding**
+   - Adds 50px padding around all edges
+   - Padding color: black if image is dark (avg brightness < 128), white if bright
+   - Helps OCR engines detect edge characters
+
+9. **Array Conversion & Validation**
+   - Converts PIL Image to NumPy array (uint8 format)
+   - Validates and clips values to [0, 255] range
+   - Returns both NumPy array (for OCR) and PIL Image (for metadata)
 
 ## Dictionary Management
 
@@ -246,17 +378,6 @@ python scripts/report_unmapped.py unmapped_chars.json suggestions.json
 
 This generates a template file with unmapped characters that you can fill in and merge into the dictionary.
 
-## Testing
-
-Run basic tests:
-```bash
-python tests/test_translator.py
-```
-
-Or use pytest:
-```bash
-pytest tests/test_translator.py
-```
 
 ## Error Handling
 
@@ -375,18 +496,67 @@ Set `INFERENCE_API_URL=http://localhost:8001` in your Next.js `.env` file.
 ## Performance
 
 - **Typical OCR time**: 3-8 seconds for standard images (1000x1000px) with both engines
+- **Translation time**: 
+  - MarianMT: 1-3 seconds (neural inference)
+  - Qwen refinement: 5-15 seconds (LLM inference, CPU-dependent)
 - **Large images**: Automatically resized to 4000x4000px max (maintains aspect ratio)
-- **Memory usage**: ~1-2GB for OCR processing (both engines loaded)
-- **First request**: May be slower due to model loading (~20-60 seconds for both engines)
-- **Parallel processing**: Both engines run simultaneously, so total time ≈ max(Time(EasyOCR), Time(PaddleOCR))
+- **Memory usage**: ~3-5GB total (OCR engines + MarianMT + Qwen models loaded)
+  - EasyOCR: ~500MB
+  - PaddleOCR: ~500MB
+  - MarianMT: ~300MB
+  - Qwen2.5-1.5B: ~3GB
+- **First request**: May be slower due to model loading (~20-60 seconds for OCR engines, ~30 seconds for MarianMT, ~3-5 minutes for Qwen)
+- **Parallel processing**: OCR engines run simultaneously, so total time ≈ max(Time(EasyOCR), Time(PaddleOCR))
+
+## Image Preprocessing Details
+
+The preprocessing pipeline performs the following operations:
+
+1. **Format Validation**: Ensures image is JPEG, PNG, or WEBP format
+2. **Dimension Validation**: Checks minimum (50×50px) and maximum (4000×4000px) dimensions
+3. **Large Image Resizing**: Proportionally resizes images exceeding 4000px (maintains aspect ratio)
+4. **Color Mode Conversion**: Converts all images to RGB color space
+5. **Small Image Upscaling**: Upscales images smaller than 300px to improve OCR accuracy
+6. **Contrast Enhancement**: Increases contrast by 1.3× to improve text-background separation
+7. **Sharpness Enhancement**: Increases sharpness by 1.2× to enhance edge definition
+8. **Adaptive Padding**: Adds 50px padding with color chosen based on image brightness (black for dark images, white for bright images)
+9. **Array Conversion**: Converts PIL Image to NumPy array with proper dtype validation
+
+## Testing
+
+### Smoke Test
+
+A pipeline smoke test is available to verify end-to-end execution:
+
+```bash
+cd services/inference
+python -m pytest tests/test_pipeline_smoke.py -v
+```
+
+This test verifies that the full OCR → translation → refinement pipeline executes without crashing. It does not test correctness or quality, only survivability.
+
+### Translator Tests
+
+Run translator unit tests:
+
+```bash
+python tests/test_translator.py
+```
+
+Or use pytest:
+
+```bash
+pytest tests/test_translator.py
+```
 
 ## Logging
 
 The service uses Python's logging module with INFO level by default. Logs include:
 - OCR engine initialization status
-- Image preprocessing steps
+- Image preprocessing steps (format validation, resizing, enhancement)
 - OCR processing progress (both engines)
 - Alignment and fusion statistics
+- Translation engine status (MarianMT, Qwen)
 - Error details and stack traces
 
 To change log level, modify the `logging.basicConfig()` call in `main.py`.
@@ -400,9 +570,20 @@ To change log level, modify the `logging.basicConfig()` call in `main.py`.
 - **Robustness**: If one engine fails, the other continues processing
 - **Uncertainty Preservation**: All candidates preserved for downstream analysis
 
+### Why Three-Tier Translation?
+
+- **Comprehensive Coverage**: Dictionary provides character meanings, MarianMT provides sentence context, Qwen refines for quality
+- **OCR Noise Correction**: Qwen LLM can correct mistranslations caused by OCR errors
+- **Coherence Improvement**: Qwen enhances contextual coherence across sentences
+- **Graceful Degradation**: System works even if one translation tier is unavailable
+- **User Choice**: Users can see all three translation types and choose which to use
+
 ### Future Enhancements
 
 - Weighted fusion based on confidence scores
 - Engine-specific preprocessing strategies
 - Confidence threshold filtering
 - Additional OCR engines (Tesseract, etc.)
+- Binarization and deskewing preprocessing
+- Vertical text layout reconstruction
+- Language model error correction for OCR mistakes

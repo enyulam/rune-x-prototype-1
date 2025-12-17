@@ -19,7 +19,10 @@ interface ProcessingResult {
     meaning?: string
     isReconstructed?: boolean
   }>
-  translation?: string
+  translation?: string  // Dictionary-based character-level translation
+  sentenceTranslation?: string  // Neural sentence-level translation (MarianMT)
+  refinedTranslation?: string  // Qwen-refined translation
+  qwenStatus?: string  // Qwen status: "available", "unavailable", "failed", "skipped"
   confidence?: number
   scriptType?: string
   method?: string
@@ -91,37 +94,20 @@ export default function ResultsDisplay({
       const newImageUrls: Record<string, string> = {}
       const newFailedIds = new Set<string>()
       
-      // Load images in parallel
-      const loadPromises = uploadIdsToLoad.map(async (uploadId) => {
-        if (cancelled) return
-        
-        try {
-          const fileResponse = await fetch(`/api/uploads/${uploadId}`)
-          if (fileResponse.ok) {
-            const blob = await fileResponse.blob()
-            if (!cancelled) {
-              newImageUrls[uploadId] = URL.createObjectURL(blob)
-            }
-          } else {
-            // Mark as failed - don't retry
-            newFailedIds.add(uploadId)
-          }
-        } catch (error) {
-          // Mark as failed - don't retry (silently)
-          newFailedIds.add(uploadId)
+      // Use direct API endpoint URLs instead of creating blob URLs
+      // This prevents images from disappearing due to blob URL revocation
+      uploadIdsToLoad.forEach((uploadId) => {
+        if (!cancelled) {
+          // Use direct API endpoint - this URL persists and won't be revoked
+          newImageUrls[uploadId] = `/api/uploads/${uploadId}`
         }
       })
-      
-      await Promise.all(loadPromises)
       
       if (cancelled) return
       
       // Update state only if we have changes
       if (Object.keys(newImageUrls).length > 0) {
         setImageUrls(prev => ({ ...prev, ...newImageUrls }))
-      }
-      if (newFailedIds.size > 0) {
-        setFailedImageLoads(prev => new Set([...prev, ...newFailedIds]))
       }
     }
 
@@ -131,6 +117,18 @@ export default function ResultsDisplay({
       cancelled = true
     }
   }, [savedUploadIds, imageUrls, failedImageLoads]) // Only re-run when saved uploadIds change
+
+  // Cleanup blob URLs on unmount (if any were created)
+  useEffect(() => {
+    return () => {
+      // Revoke any blob URLs that might have been created
+      Object.values(imageUrls).forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url)
+        }
+      })
+    }
+  }, []) // Only run on unmount
 
   // Combine and deduplicate results, prefer saved results over processing ones
   const allResults = useMemo(() => {
@@ -326,12 +324,51 @@ export default function ResultsDisplay({
                 )}
               </div>
 
-              {/* Translation */}
-              {result.translation && (
+              {/* Translation & Context */}
+              {(result.translation || result.sentenceTranslation || result.refinedTranslation) && (
                 <div>
                   <h4 className="font-medium mb-3">Translation & Context</h4>
-                  <div className="bg-primary/10 p-4 rounded-lg">
-                    <p className="font-medium mb-2">{result.translation}</p>
+                  <div className="space-y-4">
+                    {/* Dictionary-based character translation */}
+                    {result.translation && (
+                      <div className="bg-muted/50 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Character Meanings</p>
+                        <p className="text-sm text-foreground">{result.translation}</p>
+                      </div>
+                    )}
+                    
+                    {/* Neural sentence translation (MarianMT) */}
+                    {result.sentenceTranslation && (
+                      <div className="bg-primary/10 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Full Sentence Translation (MarianMT)</p>
+                        <p className="text-sm font-medium text-foreground">{result.sentenceTranslation}</p>
+                      </div>
+                    )}
+                    
+                    {/* Qwen-refined translation */}
+                    {result.refinedTranslation ? (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Refined Translation (Qwen)</p>
+                        <p className="text-sm font-medium text-foreground">{result.refinedTranslation}</p>
+                      </div>
+                    ) : result.sentenceTranslation && result.qwenStatus ? (
+                      <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Refined Translation (Qwen)</p>
+                        <p className="text-xs text-muted-foreground">
+                          {result.qwenStatus === "unavailable" && "Qwen refiner not available. Install transformers and torch."}
+                          {result.qwenStatus === "failed" && "Qwen refinement failed. Using MarianMT translation."}
+                          {result.qwenStatus === "skipped" && "Qwen refinement skipped (no MarianMT translation)."}
+                          {!result.qwenStatus && "Qwen refinement status unknown."}
+                        </p>
+                        {result.sentenceTranslation && (
+                          <p className="text-xs text-muted-foreground mt-1 italic">
+                            MarianMT: {result.sentenceTranslation}
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                    
+                    {/* Dictionary statistics */}
                     {result.coverage !== undefined && (
                       <div className="mt-3 pt-3 border-t border-primary/20">
                         <div className="flex items-center justify-between text-sm">

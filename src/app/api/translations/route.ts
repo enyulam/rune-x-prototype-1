@@ -83,7 +83,9 @@ export async function GET(request: NextRequest) {
           // Include inference metadata if available
           coverage: metadata?.coverage,
           unmapped: metadata?.unmapped,
-          dictionaryVersion: metadata?.dictionaryVersion
+          dictionaryVersion: metadata?.dictionaryVersion,
+          sentenceTranslation: metadata?.sentenceTranslation,  // Neural sentence translation (MarianMT)
+          refinedTranslation: metadata?.refinedTranslation  // Qwen-refined translation
         },
         glyphs: upload.glyphs.map(gm => ({
           symbol: gm.glyph.symbol,

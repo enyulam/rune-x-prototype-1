@@ -55,11 +55,12 @@ export async function POST(request: NextRequest) {
     
     let inferenceResp: Response
     try {
+      // Increased timeout to 5 minutes (300000ms) to accommodate Qwen model loading on first use (~3GB download)
       inferenceResp = await fetch(inferenceUrl, {
         method: 'POST',
         body: form,
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(60000) // 60 seconds
+        // Extended timeout for first-time Qwen model download and initialization
+        signal: AbortSignal.timeout(300000) // 5 minutes (300 seconds)
       })
     } catch (fetchError: any) {
       console.error('Failed to connect to inference API:', fetchError)
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
 
     const extractedText: string = result.text || result.extractedText || ''
     const translationText: string = result.translation || 'Translation unavailable'
+    const sentenceTranslation: string = result.sentence_translation || result.sentenceTranslation || ''
+    const refinedTranslation: string = result.refined_translation || result.refinedTranslation || ''
+    const qwenStatus: string = result.qwen_status || result.qwenStatus || ''
     const glyphs = Array.isArray(result.glyphs) ? result.glyphs : []
     const unmapped: string[] = Array.isArray(result.unmapped) ? result.unmapped : []
     const coverage: number = typeof result.coverage === 'number' ? result.coverage : 0
@@ -179,11 +183,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Store inference metadata (coverage, unmapped, dictionary version)
+    // Store inference metadata (coverage, unmapped, dictionary version, sentence translation, refined translation)
     const inferenceMetadata = {
       coverage,
       unmapped,
       dictionaryVersion,
+      sentenceTranslation: sentenceTranslation || undefined,  // Store neural sentence translation (MarianMT)
+      refinedTranslation: refinedTranslation || undefined,  // Store Qwen-refined translation
       method: 'external-inference',
       processedAt: new Date().toISOString()
     }
@@ -210,6 +216,9 @@ export async function POST(request: NextRequest) {
           confidence: gm.confidence
         })),
         translation: translation.translatedText,
+        sentenceTranslation: sentenceTranslation || undefined,  // Neural sentence translation (MarianMT)
+        refinedTranslation: refinedTranslation || undefined,  // Qwen-refined translation
+        qwenStatus: qwenStatus || undefined,  // Qwen refinement status
         confidence: translation.confidence,
         scriptType: scriptName,
         method: 'external-inference',
