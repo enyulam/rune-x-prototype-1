@@ -13,10 +13,16 @@ easyocr==1.7.1
 paddlepaddle>=2.6.1
 paddleocr>=2.7.0.3
 
-# Note: EasyOCR requires torch and torchvision
+# Neural Machine Translation (MarianMT)
+# Provides sentence-level translation using Helsinki-NLP/opus-mt-zh-en model
+transformers>=4.57.3
+
+# Note: EasyOCR and transformers require torch and torchvision
 # Install appropriate torch build for your Python/OS (CPU-only example):
 # torch>=2.0.0
 # torchvision>=0.15.0
 # 
 # For GPU support, install CUDA-enabled versions:
 # See: https://pytorch.org/get-started/locally/
+#
+# First-time use: MarianMT model (~300MB) downloads automatically from HuggingFace

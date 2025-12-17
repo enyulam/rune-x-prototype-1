@@ -6,7 +6,9 @@ FastAPI service for Chinese handwriting OCR with hybrid OCR system and dictionar
 
 - **Hybrid OCR System**: Runs EasyOCR and PaddleOCR in parallel, then fuses results at character level
 - **Character-Level Fusion**: Preserves all character hypotheses from both engines using IoU-based alignment
-- **Translation**: Dictionary-based rule translation with per-character meanings
+- **Dual Translation System**: 
+  - **Dictionary-Based Translation**: Character-level meanings from custom dictionary (276+ entries)
+  - **Neural Sentence Translation**: Context-aware sentence-level translation using MarianMT (Helsinki-NLP/opus-mt-zh-en)
 - **Dictionary**: JSON-based character dictionary with 276+ entries (meanings, alternatives, notes)
 - **Image Preprocessing**: Automatic validation, resizing, contrast enhancement, and format conversion
 - **Error Handling**: Comprehensive error messages and validation with graceful fallback
@@ -54,7 +56,9 @@ pip install -r requirements.txt
 **Note**: 
 - EasyOCR requires PyTorch and torchvision (install separately based on your system)
 - PaddleOCR will automatically download model files on first use (requires internet connection, ~200-300MB)
+- MarianMT (transformers) will download translation model on first use (~300MB from HuggingFace)
 - Both OCR engines will initialize on first request (takes 20-60 seconds)
+- Sentence translator loads model lazily (on first translation request)
 
 2. **Install PyTorch** (required for EasyOCR):
 ```bash
@@ -67,7 +71,7 @@ pip install torch torchvision
 
 3. **Verify installation**:
 ```bash
-python -c "import easyocr; import paddleocr; print('Both OCR engines installed successfully')"
+python -c "import easyocr; import paddleocr; from transformers import MarianMTModel, MarianTokenizer; print('All dependencies installed successfully')"
 ```
 
 4. **Dictionary**: The dictionary file is located at `data/dictionary.json`. 
@@ -152,8 +156,9 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
 **Response**:
 ```json
 {
-  "text": "我",
-  "translation": "I; me; myself; we; our",
+  "text": "我爱你",
+  "translation": "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself",
+  "sentence_translation": "I love you",
   "confidence": 0.92,
   "glyphs": [
     {
@@ -161,6 +166,18 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
       "bbox": [10, 20, 50, 50],
       "confidence": 0.92,
       "meaning": "I; me; myself; we; our"
+    },
+    {
+      "symbol": "爱",
+      "bbox": [60, 20, 100, 50],
+      "confidence": 0.88,
+      "meaning": "love; affection; like; care for; cherish"
+    },
+    {
+      "symbol": "你",
+      "bbox": [110, 20, 150, 50],
+      "confidence": 0.90,
+      "meaning": "you; your; yourself"
     }
   ],
   "unmapped": [],
@@ -169,13 +186,18 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
 }
 ```
 
+**Translation Fields**:
+- `translation`: Dictionary-based character-level translation (concatenated meanings)
+- `sentence_translation`: Neural sentence-level translation using MarianMT (context-aware, natural English)
+
 **Processing Flow**:
 1. Image preprocessing (upscaling, contrast, padding)
 2. Parallel OCR execution (EasyOCR + PaddleOCR)
 3. Result normalization and alignment
 4. Character-level fusion
-5. Dictionary lookup and translation
-6. Response generation
+5. Dictionary lookup and character-level translation
+6. Neural sentence-level translation (MarianMT)
+7. Response generation
 
 ## Hybrid OCR Details
 
@@ -204,6 +226,33 @@ Both OCR engines return results in a normalized format:
 - No majority voting or candidate discarding
 - Highest confidence candidate selected as primary for each position
 - Multiple candidates available for uncertainty analysis
+
+## Translation System
+
+### Dual Translation Approach
+
+The service provides two complementary translation methods:
+
+1. **Dictionary-Based Translation** (`translation` field):
+   - Character-by-character lookup from `dictionary.json`
+   - Concatenates meanings with ` | ` separator
+   - Fast, deterministic, preserves all character meanings
+   - Example: "我 | 爱 | 你" → "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"
+
+2. **Neural Sentence Translation** (`sentence_translation` field):
+   - Uses MarianMT model (Helsinki-NLP/opus-mt-zh-en)
+   - Processes entire sentence as context
+   - Produces natural, grammatically correct English
+   - Example: "我爱你" → "I love you"
+   - Lazy-loaded (model downloads on first use, ~300MB)
+   - Falls back gracefully if unavailable
+
+### Translation Flow
+
+1. After OCR extraction and character fusion
+2. Dictionary lookup for each character → `translation` field
+3. Neural translation of full text → `sentence_translation` field
+4. Both included in response (if available)
 
 ## Dictionary Management
 

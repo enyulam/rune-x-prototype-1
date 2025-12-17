@@ -20,6 +20,7 @@ import numpy as np
 import easyocr
 
 from translator import get_translator
+from sentence_translator import get_sentence_translator
 
 # Configure logging
 logging.basicConfig(
@@ -82,7 +83,8 @@ class Glyph(BaseModel):
 
 class InferenceResponse(BaseModel):
     text: str
-    translation: str
+    translation: str  # Dictionary-based character-level translation
+    sentence_translation: Optional[str] = None  # Neural sentence-level translation
     confidence: float
     glyphs: List[Glyph]
     unmapped: Optional[List[str]] = None
@@ -657,10 +659,11 @@ def fuse_character_candidates(fused_positions: List[FusedPosition]) -> Tuple[Lis
     return glyphs, full_text
 
 
-# Initialize OCR engines and translator
+# Initialize OCR engines and translators
 easyocr_reader = _load_easyocr()
 paddleocr_reader = _load_paddleocr()
-translator = get_translator()
+translator = get_translator()  # Dictionary-based translator
+sentence_translator = get_sentence_translator()  # Neural sentence translator
 
 if easyocr_reader is None:
     logger.warning("EasyOCR not available. OCR functionality will be limited.")
@@ -672,6 +675,11 @@ else:
     logger.info("OCR service ready (EasyOCR: %s, PaddleOCR: %s)",
                 "available" if easyocr_reader else "unavailable",
                 "available" if paddleocr_reader else "unavailable")
+
+if sentence_translator is None:
+    logger.warning("Sentence translator not available. Install transformers and torch for neural translation.")
+else:
+    logger.info("Sentence translator ready (MarianMT)")
 
 
 @app.get("/health")
@@ -896,9 +904,22 @@ async def process_image(file: UploadFile = File(...)):
     
     logger.info("Processing complete: %d glyphs, confidence: %.2f", len(enriched_glyphs), avg_confidence)
     
+    # Perform sentence-level neural translation
+    sentence_translation = None
+    if sentence_translator and sentence_translator.is_available():
+        try:
+            sentence_translation = sentence_translator.translate(full_text)
+            logger.info("Sentence translation completed: %s", sentence_translation[:50] if sentence_translation else "None")
+        except Exception as e:
+            logger.error("Sentence translation failed: %s", e)
+            sentence_translation = None
+    else:
+        logger.debug("Sentence translator not available, skipping neural translation")
+    
     return InferenceResponse(
         text=full_text,
-        translation=translation_result.get("translation", ""),
+        translation=translation_result.get("translation", ""),  # Dictionary-based
+        sentence_translation=sentence_translation,  # Neural sentence translation
         confidence=avg_confidence,
         glyphs=enriched_glyphs,
         unmapped=translation_result.get("unmapped", []),
