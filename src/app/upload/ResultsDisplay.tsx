@@ -19,7 +19,8 @@ interface ProcessingResult {
     meaning?: string
     isReconstructed?: boolean
   }>
-  translation?: string
+  translation?: string  // Dictionary-based character-level translation
+  sentenceTranslation?: string  // Neural sentence-level translation
   confidence?: number
   scriptType?: string
   method?: string
@@ -326,12 +327,28 @@ export default function ResultsDisplay({
                 )}
               </div>
 
-              {/* Translation */}
-              {result.translation && (
+              {/* Translation & Context */}
+              {(result.translation || result.sentenceTranslation) && (
                 <div>
                   <h4 className="font-medium mb-3">Translation & Context</h4>
-                  <div className="bg-primary/10 p-4 rounded-lg">
-                    <p className="font-medium mb-2">{result.translation}</p>
+                  <div className="space-y-4">
+                    {/* Dictionary-based character translation */}
+                    {result.translation && (
+                      <div className="bg-muted/50 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Character Meanings</p>
+                        <p className="text-sm text-foreground">{result.translation}</p>
+                      </div>
+                    )}
+                    
+                    {/* Neural sentence translation */}
+                    {result.sentenceTranslation && (
+                      <div className="bg-primary/10 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Full Sentence Translation</p>
+                        <p className="text-sm font-medium text-foreground">{result.sentenceTranslation}</p>
+                      </div>
+                    )}
+                    
+                    {/* Dictionary statistics */}
                     {result.coverage !== undefined && (
                       <div className="mt-3 pt-3 border-t border-primary/20">
                         <div className="flex items-center justify-between text-sm">

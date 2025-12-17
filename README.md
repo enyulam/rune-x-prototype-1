@@ -8,12 +8,16 @@ An advanced multimodal AI platform for ancient script interpretation, reconstruc
 
 **Hybrid OCR System**: The platform uses a dual-engine OCR approach combining EasyOCR and PaddleOCR for enhanced accuracy and reliability.
 
+**Dual Translation System**: The platform provides both character-level dictionary translation and context-aware neural sentence translation.
+
 The platform uses a FastAPI backend service with a **hybrid OCR system** that runs both EasyOCR and PaddleOCR in parallel, then fuses their outputs at the character level. This approach provides:
 - **Dual OCR Engines**: EasyOCR (Chinese Simplified + English) and PaddleOCR (Chinese) run simultaneously
 - **Character-Level Fusion**: Results from both engines are aligned using IoU-based matching and fused, preserving all character candidates
 - **Enhanced Accuracy**: Multiple hypotheses per character position improve recognition of difficult or stylized text
 - **Robust Image Preprocessing**: Automatic preprocessing (upscaling, contrast enhancement, padding) optimizes images for OCR
-- **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries including meanings, alternatives, and contextual notes
+- **Dual Translation System**: 
+  - **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries (character-level meanings)
+  - **Neural Sentence Translation**: MarianMT model for context-aware, natural English sentence translation
 
 **Key Features**:
 - Parallel OCR processing for faster results
@@ -64,6 +68,9 @@ Rune-X integrates three technically robust components:
 - **👁️ Hybrid OCR System** - EasyOCR + PaddleOCR running in parallel with character-level fusion
   - **EasyOCR** - Chinese Simplified (`ch_sim`) and English support
   - **PaddleOCR** - Chinese text recognition with advanced models
+- **🌐 Neural Translation** - MarianMT (transformers) for sentence-level translation
+  - **Model**: Helsinki-NLP/opus-mt-zh-en (Chinese → English)
+  - **Lazy Loading**: Model downloads automatically on first use (~300MB)
 
 ### 🎨 Advanced UI Features
 - **📊 TanStack Table** - Headless UI for building tables and datagrids
@@ -83,8 +90,9 @@ Rune-X integrates three technically robust components:
 - **Node.js 18+** and npm
 - **Python 3.8+** and pip
 - **SQLite** (included with Node.js)
-- **PyTorch** (for EasyOCR - CPU version is fine, install separately)
+- **PyTorch** (for EasyOCR and transformers - CPU version is fine, install separately)
 - **PaddlePaddle** (for PaddleOCR - CPU version, installed via requirements.txt)
+- **Transformers** (for MarianMT sentence translation - installed via requirements.txt)
 
 ### Setup
 
@@ -217,7 +225,9 @@ npm run db:reset
 - **🔍 Glyph Tokenisation** - Advanced segmentation of irregular glyphs
 - **🧠 Semantic Analysis** - Context-aware interpretation of ancient scripts
 - **🔧 Generative Reconstruction** - Restoration of damaged or incomplete glyphs
-- **📖 Translation** - Semantic translation with confidence scores
+- **📖 Translation** - Dual translation system:
+  - **Character Meanings**: Dictionary-based per-character translations
+  - **Full Sentence Translation**: Neural context-aware translation using MarianMT
 - **📊 Dashboard** - User dashboard with statistics and activity
 - **📚 Translation Library** - Browse and search your translations
 - **📤 Export Capabilities** - Export in TEI-XML, JSON-LD formats
@@ -263,7 +273,9 @@ The service uses a **hybrid OCR system** combining EasyOCR and PaddleOCR engines
 - **Character-Level Fusion**: Results aligned using bounding box overlap (IoU) and fused with all candidates preserved
 - **Parallel Processing**: Both engines process images concurrently for faster results
 - **Automatic Image Preprocessing**: Upscaling, contrast enhancement, padding for optimal OCR accuracy
-- **Dictionary-Based Translation**: 276+ Chinese character entries with meanings, alternatives, and notes
+- **Dual Translation System**:
+  - **Dictionary-Based Translation**: 276+ Chinese character entries with meanings, alternatives, and notes (character-level)
+  - **Neural Sentence Translation**: MarianMT model for context-aware, natural English translation (sentence-level)
 - **Robust Error Handling**: Graceful fallback if one engine fails, comprehensive error messages
 - **Reading Order Preservation**: Characters sorted top-to-bottom, left-to-right
 

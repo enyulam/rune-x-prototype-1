@@ -46,11 +46,15 @@ interface ProcessingResult {
     meaning?: string
     isReconstructed?: boolean
   }>
-  translation?: string
+  translation?: string  // Dictionary-based character-level translation
+  sentenceTranslation?: string  // Neural sentence-level translation
   confidence?: number
   scriptType?: string
   method?: string
   error?: string // Error message if processing failed
+  coverage?: number
+  unmapped?: string[]
+  dictionaryVersion?: string
 }
 
 export default function UploadPage() {
@@ -86,6 +90,7 @@ export default function UploadPage() {
             coverage: t.upload?.coverage,
             unmapped: t.upload?.unmapped,
             dictionaryVersion: t.upload?.dictionaryVersion,
+            sentenceTranslation: t.upload?.sentenceTranslation,  // Neural sentence translation
             glyphs: (t.glyphs || []).map((g: any) => {
               // Use stored confidence, or default to 60% if character is recognized but no meaning
               const hasValidMeaning = g.meaning && 
@@ -517,6 +522,7 @@ export default function UploadPage() {
                   translation: resultsData.upload?.translations?.[0]?.translatedText || 
                               processData.results?.translation || 
                               'Translation not available',
+                  sentenceTranslation: processData.results?.sentenceTranslation || undefined,
                   confidence: resultsData.upload?.translations?.[0]?.confidence || 
                              processData.results?.confidence || 
                              0.90,

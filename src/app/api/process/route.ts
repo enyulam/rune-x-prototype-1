@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
 
     const extractedText: string = result.text || result.extractedText || ''
     const translationText: string = result.translation || 'Translation unavailable'
+    const sentenceTranslation: string = result.sentence_translation || result.sentenceTranslation || ''
     const glyphs = Array.isArray(result.glyphs) ? result.glyphs : []
     const unmapped: string[] = Array.isArray(result.unmapped) ? result.unmapped : []
     const coverage: number = typeof result.coverage === 'number' ? result.coverage : 0
@@ -179,11 +180,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Store inference metadata (coverage, unmapped, dictionary version)
+    // Store inference metadata (coverage, unmapped, dictionary version, sentence translation)
     const inferenceMetadata = {
       coverage,
       unmapped,
       dictionaryVersion,
+      sentenceTranslation: sentenceTranslation || undefined,  // Store neural sentence translation
       method: 'external-inference',
       processedAt: new Date().toISOString()
     }
@@ -210,6 +212,7 @@ export async function POST(request: NextRequest) {
           confidence: gm.confidence
         })),
         translation: translation.translatedText,
+        sentenceTranslation: sentenceTranslation || undefined,  // Neural sentence translation
         confidence: translation.confidence,
         scriptType: scriptName,
         method: 'external-inference',
