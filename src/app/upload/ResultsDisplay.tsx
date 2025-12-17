@@ -94,37 +94,20 @@ export default function ResultsDisplay({
       const newImageUrls: Record<string, string> = {}
       const newFailedIds = new Set<string>()
       
-      // Load images in parallel
-      const loadPromises = uploadIdsToLoad.map(async (uploadId) => {
-        if (cancelled) return
-        
-        try {
-          const fileResponse = await fetch(`/api/uploads/${uploadId}`)
-          if (fileResponse.ok) {
-            const blob = await fileResponse.blob()
-            if (!cancelled) {
-              newImageUrls[uploadId] = URL.createObjectURL(blob)
-            }
-          } else {
-            // Mark as failed - don't retry
-            newFailedIds.add(uploadId)
-          }
-        } catch (error) {
-          // Mark as failed - don't retry (silently)
-          newFailedIds.add(uploadId)
+      // Use direct API endpoint URLs instead of creating blob URLs
+      // This prevents images from disappearing due to blob URL revocation
+      uploadIdsToLoad.forEach((uploadId) => {
+        if (!cancelled) {
+          // Use direct API endpoint - this URL persists and won't be revoked
+          newImageUrls[uploadId] = `/api/uploads/${uploadId}`
         }
       })
-      
-      await Promise.all(loadPromises)
       
       if (cancelled) return
       
       // Update state only if we have changes
       if (Object.keys(newImageUrls).length > 0) {
         setImageUrls(prev => ({ ...prev, ...newImageUrls }))
-      }
-      if (newFailedIds.size > 0) {
-        setFailedImageLoads(prev => new Set([...prev, ...newFailedIds]))
       }
     }
 
@@ -134,6 +117,18 @@ export default function ResultsDisplay({
       cancelled = true
     }
   }, [savedUploadIds, imageUrls, failedImageLoads]) // Only re-run when saved uploadIds change
+
+  // Cleanup blob URLs on unmount (if any were created)
+  useEffect(() => {
+    return () => {
+      // Revoke any blob URLs that might have been created
+      Object.values(imageUrls).forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url)
+        }
+      })
+    }
+  }, []) // Only run on unmount
 
   // Combine and deduplicate results, prefer saved results over processing ones
   const allResults = useMemo(() => {

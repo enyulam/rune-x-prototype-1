@@ -491,6 +491,10 @@ Creates `InferenceResponse` with all three translation types:
 **Location**: `src/app/upload/ResultsDisplay.tsx`
 
 - Updates UI with results in "Translation & Context" section:
+  - **Original Image**: Displayed via secure API endpoint (`/api/uploads/[id]`)
+    - Images served directly from file system with authentication
+    - Proper caching headers for performance
+    - Images persist and don't disappear (no blob URL revocation)
   - **Extracted Text**: "我爱你"
   - **Character Meanings**: "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"
   - **Full Sentence Translation**: "I love you" (MarianMT)
@@ -498,6 +502,16 @@ Creates `InferenceResponse` with all three translation types:
   - **Glyphs**: Individual character breakdown with meanings
   - **Confidence**: Overall confidence score
   - **Coverage**: Dictionary coverage percentage
+
+### Step 10.3: Image Serving
+**Location**: `src/app/api/uploads/[id]/route.ts`
+
+- Secure image serving endpoint:
+  - **Authentication**: Verifies user owns the upload
+  - **File Access**: Reads image from file system (`uploads/` directory)
+  - **Content-Type**: Automatically detects image format (JPEG, PNG, WebP)
+  - **Caching**: Sets cache headers for 1 year (immutable)
+  - **Error Handling**: Returns 404 if file not found or unauthorized
 
 ---
 

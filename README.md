@@ -170,6 +170,7 @@ src/
 │   ├── api/
 │   │   ├── auth/          # NextAuth authentication routes
 │   │   ├── upload/         # File upload endpoint
+│   │   ├── uploads/        # Image serving endpoint (GET /api/uploads/[id])
 │   │   ├── process/        # Text processing endpoint
 │   │   ├── translations/   # Translations API
 │   │   └── dashboard/      # Dashboard stats API
@@ -244,6 +245,7 @@ npm run db:reset
 - **📤 Export Capabilities** - Export in TEI-XML, JSON-LD formats
 - **🎨 Modern UI** - Beautiful, responsive interface with dark mode support
 - **🧪 Testing** - Pipeline smoke tests for end-to-end verification
+- **🔒 Secure File Access** - Images served via authenticated API endpoints with proper caching
 
 ### Technical Features
 
@@ -255,6 +257,7 @@ npm run db:reset
 - **Component Library** - shadcn/ui for consistent UI components
 - **Metadata Tracking** - Provenance and version control
 - **Batch Processing** - Process multiple files simultaneously
+- **Secure File Serving** - Authenticated image serving with proper caching and persistence
 
 ## 🛠️ Development
 
