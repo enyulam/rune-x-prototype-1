@@ -35,3 +35,14 @@ accelerate>=0.30.0  # Required for device_map="auto" when using CUDA
 # First-time use:
 # - MarianMT model (~300MB) downloads automatically from HuggingFace
 # - Qwen2.5-1.5B model (~3GB) downloads automatically from HuggingFace
+#
+# Installation order recommended:
+# 1. Install torch/torchvision first (CPU or CUDA version)
+# 2. pip install -r requirements.txt
+# 3. Models will download automatically on first use
+#
+# Total disk space required (after first use):
+# - OCR models: ~500MB (EasyOCR + PaddleOCR)
+# - MarianMT: ~300MB
+# - Qwen2.5-1.5B: ~3GB
+# - Total: ~4GB
