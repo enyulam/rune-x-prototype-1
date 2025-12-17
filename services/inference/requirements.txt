@@ -16,8 +16,15 @@ paddleocr>=2.7.0.3
 # Neural Machine Translation (MarianMT)
 # Provides sentence-level translation using Helsinki-NLP/opus-mt-zh-en model
 transformers>=4.57.3
+sacremoses>=0.1.1  # Recommended for MarianMT tokenization
 
-# Note: EasyOCR and transformers require torch and torchvision
+# Qwen LLM Refinement
+# Qwen2.5-1.5B-Instruct model for refining MarianMT translations
+# Model downloads automatically on first use (~3GB from HuggingFace)
+# Requires transformers (already listed above)
+accelerate>=0.30.0  # Required for device_map="auto" when using CUDA
+
+# Note: EasyOCR, transformers, and Qwen require torch and torchvision
 # Install appropriate torch build for your Python/OS (CPU-only example):
 # torch>=2.0.0
 # torchvision>=0.15.0
@@ -25,4 +32,6 @@ transformers>=4.57.3
 # For GPU support, install CUDA-enabled versions:
 # See: https://pytorch.org/get-started/locally/
 #
-# First-time use: MarianMT model (~300MB) downloads automatically from HuggingFace
+# First-time use:
+# - MarianMT model (~300MB) downloads automatically from HuggingFace
+# - Qwen2.5-1.5B model (~3GB) downloads automatically from HuggingFace

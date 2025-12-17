@@ -31,6 +31,7 @@ if ($portInUse) {
 
 Write-Host "Starting uvicorn server on http://0.0.0.0:8001..." -ForegroundColor Cyan
 Write-Host "Note: OCR engines (EasyOCR + PaddleOCR) may take 30-60 seconds to initialize." -ForegroundColor Yellow
+Write-Host "Note: Translation engines (MarianMT, Qwen) will initialize on first use." -ForegroundColor Yellow
 Write-Host ""
 
 # Change to backend directory

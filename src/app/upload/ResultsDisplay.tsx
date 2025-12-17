@@ -20,7 +20,9 @@ interface ProcessingResult {
     isReconstructed?: boolean
   }>
   translation?: string  // Dictionary-based character-level translation
-  sentenceTranslation?: string  // Neural sentence-level translation
+  sentenceTranslation?: string  // Neural sentence-level translation (MarianMT)
+  refinedTranslation?: string  // Qwen-refined translation
+  qwenStatus?: string  // Qwen status: "available", "unavailable", "failed", "skipped"
   confidence?: number
   scriptType?: string
   method?: string
@@ -328,7 +330,7 @@ export default function ResultsDisplay({
               </div>
 
               {/* Translation & Context */}
-              {(result.translation || result.sentenceTranslation) && (
+              {(result.translation || result.sentenceTranslation || result.refinedTranslation) && (
                 <div>
                   <h4 className="font-medium mb-3">Translation & Context</h4>
                   <div className="space-y-4">
@@ -340,13 +342,36 @@ export default function ResultsDisplay({
                       </div>
                     )}
                     
-                    {/* Neural sentence translation */}
+                    {/* Neural sentence translation (MarianMT) */}
                     {result.sentenceTranslation && (
                       <div className="bg-primary/10 p-3 rounded-lg">
-                        <p className="text-xs font-semibold text-foreground mb-2">Full Sentence Translation</p>
+                        <p className="text-xs font-semibold text-foreground mb-2">Full Sentence Translation (MarianMT)</p>
                         <p className="text-sm font-medium text-foreground">{result.sentenceTranslation}</p>
                       </div>
                     )}
+                    
+                    {/* Qwen-refined translation */}
+                    {result.refinedTranslation ? (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Refined Translation (Qwen)</p>
+                        <p className="text-sm font-medium text-foreground">{result.refinedTranslation}</p>
+                      </div>
+                    ) : result.sentenceTranslation && result.qwenStatus ? (
+                      <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-foreground mb-2">Refined Translation (Qwen)</p>
+                        <p className="text-xs text-muted-foreground">
+                          {result.qwenStatus === "unavailable" && "Qwen refiner not available. Install transformers and torch."}
+                          {result.qwenStatus === "failed" && "Qwen refinement failed. Using MarianMT translation."}
+                          {result.qwenStatus === "skipped" && "Qwen refinement skipped (no MarianMT translation)."}
+                          {!result.qwenStatus && "Qwen refinement status unknown."}
+                        </p>
+                        {result.sentenceTranslation && (
+                          <p className="text-xs text-muted-foreground mt-1 italic">
+                            MarianMT: {result.sentenceTranslation}
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
                     
                     {/* Dictionary statistics */}
                     {result.coverage !== undefined && (

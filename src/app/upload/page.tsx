@@ -47,7 +47,9 @@ interface ProcessingResult {
     isReconstructed?: boolean
   }>
   translation?: string  // Dictionary-based character-level translation
-  sentenceTranslation?: string  // Neural sentence-level translation
+  sentenceTranslation?: string  // Neural sentence-level translation (MarianMT)
+  refinedTranslation?: string  // Qwen-refined translation
+  qwenStatus?: string  // Qwen status: "available", "unavailable", "failed", "skipped"
   confidence?: number
   scriptType?: string
   method?: string
@@ -90,6 +92,8 @@ export default function UploadPage() {
             coverage: t.upload?.coverage,
             unmapped: t.upload?.unmapped,
             dictionaryVersion: t.upload?.dictionaryVersion,
+            sentenceTranslation: t.upload?.sentenceTranslation,  // Neural sentence translation (MarianMT)
+            refinedTranslation: t.upload?.refinedTranslation,  // Qwen-refined translation
             sentenceTranslation: t.upload?.sentenceTranslation,  // Neural sentence translation
             glyphs: (t.glyphs || []).map((g: any) => {
               // Use stored confidence, or default to 60% if character is recognized but no meaning
@@ -523,6 +527,8 @@ export default function UploadPage() {
                               processData.results?.translation || 
                               'Translation not available',
                   sentenceTranslation: processData.results?.sentenceTranslation || undefined,
+                  refinedTranslation: processData.results?.refinedTranslation || undefined,
+                  qwenStatus: processData.results?.qwenStatus || undefined,
                   confidence: resultsData.upload?.translations?.[0]?.confidence || 
                              processData.results?.confidence || 
                              0.90,

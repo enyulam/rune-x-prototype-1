@@ -84,7 +84,8 @@ export async function GET(request: NextRequest) {
           coverage: metadata?.coverage,
           unmapped: metadata?.unmapped,
           dictionaryVersion: metadata?.dictionaryVersion,
-          sentenceTranslation: metadata?.sentenceTranslation  // Neural sentence translation
+          sentenceTranslation: metadata?.sentenceTranslation,  // Neural sentence translation (MarianMT)
+          refinedTranslation: metadata?.refinedTranslation  // Qwen-refined translation
         },
         glyphs: upload.glyphs.map(gm => ({
           symbol: gm.glyph.symbol,

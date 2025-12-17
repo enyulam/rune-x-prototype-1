@@ -23,6 +23,7 @@ if not exist "%BACKEND_DIR%\main.py" (
 
 echo Starting uvicorn server on http://0.0.0.0:8001...
 echo Note: OCR engines (EasyOCR + PaddleOCR) may take 30-60 seconds to initialize.
+echo Note: Translation engines (MarianMT, Qwen) will initialize on first use.
 echo.
 
 REM Change to backend directory and start the server

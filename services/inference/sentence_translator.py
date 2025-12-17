@@ -102,10 +102,23 @@ class SentenceTranslator:
                 logger.warning(f"Text too long ({len(text)} chars), truncating to {max_length}")
                 text = text[:max_length]
             
+            logger.info(f"MarianMT input text (first 200 chars): {text[:200]}")
+            logger.info(f"MarianMT input text length: {len(text)} characters")
+            
             inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
-            translated = self.model.generate(**inputs)
+            
+            # Add parameters to prevent repetition
+            translated = self.model.generate(
+                **inputs,
+                max_length=max_length,
+                num_beams=4,
+                early_stopping=True,
+                no_repeat_ngram_size=3,  # Prevent 3-gram repetition
+                repetition_penalty=1.5   # Penalize repetition
+            )
             translation = self.tokenizer.decode(translated[0], skip_special_tokens=True)
-            logger.debug(f"Translated text: {text[:50]}... -> {translation[:50]}...")
+            logger.info(f"MarianMT output translation (first 200 chars): {translation[:200]}")
+            logger.info(f"MarianMT output translation length: {len(translation)} characters")
             return translation
         except Exception as e:
             logger.error(f"Translation error: {e}", exc_info=True)
