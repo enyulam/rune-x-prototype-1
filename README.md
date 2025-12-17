@@ -14,7 +14,7 @@ The platform uses a FastAPI backend service with a **hybrid OCR system** that ru
 - **Dual OCR Engines**: EasyOCR (Chinese Simplified + English) and PaddleOCR (Chinese) run simultaneously
 - **Character-Level Fusion**: Results from both engines are aligned using IoU-based matching and fused, preserving all character candidates
 - **Enhanced Accuracy**: Multiple hypotheses per character position improve recognition of difficult or stylized text
-- **Robust Image Preprocessing**: Automatic preprocessing (upscaling, contrast enhancement, padding) optimizes images for OCR
+- **Robust Image Preprocessing**: Comprehensive 9-step preprocessing pipeline (format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, adaptive padding) optimizes images for OCR
 - **Three-Tier Translation System**: 
   - **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries (character-level meanings)
   - **Neural Sentence Translation**: MarianMT model for context-aware, natural English sentence translation
@@ -243,6 +243,7 @@ npm run db:reset
 - **📚 Translation Library** - Browse and search your translations
 - **📤 Export Capabilities** - Export in TEI-XML, JSON-LD formats
 - **🎨 Modern UI** - Beautiful, responsive interface with dark mode support
+- **🧪 Testing** - Pipeline smoke tests for end-to-end verification
 
 ### Technical Features
 
@@ -283,7 +284,7 @@ The service uses a **hybrid OCR system** combining EasyOCR and PaddleOCR engines
 - **Dual OCR Engines**: EasyOCR (ch_sim + en) and PaddleOCR (ch) run simultaneously
 - **Character-Level Fusion**: Results aligned using bounding box overlap (IoU) and fused with all candidates preserved
 - **Parallel Processing**: Both engines process images concurrently for faster results
-- **Automatic Image Preprocessing**: Upscaling, contrast enhancement, padding for optimal OCR accuracy
+- **Comprehensive Image Preprocessing**: 9-step pipeline including format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, and adaptive padding for optimal OCR accuracy
 - **Three-Tier Translation System**:
   - **Dictionary-Based Translation**: 276+ Chinese character entries with meanings, alternatives, and notes (character-level)
   - **Neural Sentence Translation**: MarianMT model for context-aware, natural English translation (sentence-level)

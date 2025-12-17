@@ -67,26 +67,41 @@ The platform uses a **hybrid OCR system** that combines EasyOCR and PaddleOCR en
 ### Step 3.2: Image Preprocessing
 **Location**: `services/inference/main.py` → `_preprocess_image()`
 
-The preprocessing pipeline optimizes images for OCR:
+The preprocessing pipeline optimizes images for OCR through 9 sequential steps:
 
-1. **Load Image**: Opens image with PIL (Python Imaging Library)
-2. **Format Validation**: Ensures JPEG, PNG, or WebP format
-3. **Dimension Check**: 
-   - Minimum: 50×50 pixels
+1. **Load Image**: Opens image with PIL (Python Imaging Library) from bytes
+2. **Format Validation**: 
+   - Ensures JPEG, PNG, or WebP format
+   - Raises HTTPException (400) if unsupported
+3. **Dimension Validation**: 
+   - Minimum: 50×50 pixels (raises HTTPException if too small)
    - Maximum: 4000×4000 pixels (auto-resized if larger)
-4. **Color Mode**: Converts to RGB if needed
-5. **Small Image Enhancement**:
+4. **Large Image Resizing**:
+   - If width or height > 4000px, proportionally resizes to fit within 4000×4000px
+   - Maintains aspect ratio using LANCZOS resampling
+5. **Color Mode Conversion**: 
+   - Converts non-RGB images to RGB
+   - Ensures consistent color space for OCR engines
+6. **Small Image Upscaling**:
    - If image < 300px on any dimension:
      - Calculates scale factor to reach 300px minimum
      - Upscales using LANCZOS resampling
-6. **Contrast Enhancement**:
-   - Increases contrast by 1.3×
-   - Sharpens image by 1.2×
-7. **Padding Addition**:
+   - Improves OCR accuracy for small images
+7. **Contrast Enhancement**:
+   - Increases contrast by 1.3× using `ImageEnhance.Contrast`
+   - Improves text-background separation
+8. **Sharpness Enhancement**:
+   - Increases sharpness by 1.2× using `ImageEnhance.Sharpness`
+   - Enhances edge definition for better character recognition
+9. **Adaptive Padding Addition**:
    - Adds 50px padding around image
-   - Background color: black (if image is dark) or white (if image is bright)
+   - Calculates average brightness to determine padding color
+   - Background color: black (if avg brightness < 128) or white (if bright)
    - Helps OCR detect edge characters
-8. **Array Conversion**: Converts PIL Image to NumPy array (uint8, 0-255 range)
+10. **Array Conversion & Validation**: 
+    - Converts PIL Image to NumPy array (uint8 format)
+    - Validates and clips values to [0, 255] range
+    - Returns both NumPy array (for OCR) and PIL Image (for metadata)
 
 **Output**: Preprocessed NumPy array ready for OCR engines
 

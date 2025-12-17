@@ -1,6 +1,6 @@
 # Rune-X Inference Service
 
-FastAPI service for Chinese handwriting OCR with hybrid OCR system and dictionary-based translation.
+FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier translation (dictionary + MarianMT + Qwen), and comprehensive 9-step image preprocessing pipeline.
 
 ## Features
 
@@ -11,7 +11,7 @@ FastAPI service for Chinese handwriting OCR with hybrid OCR system and dictionar
   - **Neural Sentence Translation**: Context-aware sentence-level translation using MarianMT (Helsinki-NLP/opus-mt-zh-en)
   - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
 - **Dictionary**: JSON-based character dictionary with 276+ entries (meanings, alternatives, notes)
-- **Image Preprocessing**: Automatic validation, resizing, contrast enhancement, and format conversion
+- **Image Preprocessing**: Comprehensive preprocessing pipeline including format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, and adaptive padding
 - **Error Handling**: Comprehensive error messages and validation with graceful fallback
 - **Performance**: Optimized for various image sizes with automatic resizing
 
@@ -208,7 +208,16 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
 - `qwen_status`: Status of Qwen refinement ("available", "unavailable", "failed", "skipped")
 
 **Processing Flow**:
-1. Image preprocessing (upscaling, contrast, padding)
+1. Image preprocessing (9-step pipeline):
+   - Format validation (JPEG/PNG/WEBP only)
+   - Dimension validation (50×50 to 4000×4000 pixels)
+   - Large image resizing (proportional, max 4000px)
+   - Color mode conversion (to RGB)
+   - Small image upscaling (minimum 300px)
+   - Contrast enhancement (1.3×)
+   - Sharpness enhancement (1.2×)
+   - Padding addition (50px, adaptive color based on brightness)
+   - Array conversion and validation
 2. Parallel OCR execution (EasyOCR + PaddleOCR)
 3. Result normalization and alignment
 4. Character-level fusion
@@ -283,6 +292,51 @@ The service provides three complementary translation methods:
 4. Qwen LLM refinement of MarianMT translation → `refined_translation` field
 5. All three included in response (if available)
 
+## Image Preprocessing Pipeline
+
+The preprocessing pipeline performs the following operations in sequence:
+
+1. **Format Validation**
+   - Validates image format (JPEG, PNG, WEBP only)
+   - Raises HTTPException (400) if format is unsupported
+
+2. **Dimension Validation**
+   - Minimum size: 50×50 pixels
+   - Maximum size: 4000×4000 pixels
+   - Raises HTTPException (400) if too small
+
+3. **Large Image Resizing**
+   - If width or height > 4000px, proportionally resizes to fit within 4000×4000px
+   - Maintains aspect ratio
+   - Uses LANCZOS resampling
+
+4. **Color Mode Conversion**
+   - Converts non-RGB images to RGB
+   - Ensures consistent color space for OCR engines
+
+5. **Small Image Upscaling**
+   - If width < 300px or height < 300px, upscales to minimum 300px
+   - Uses LANCZOS resampling for quality
+   - Improves OCR accuracy for small images
+
+6. **Contrast Enhancement**
+   - Increases contrast by 1.3× using `ImageEnhance.Contrast`
+   - Improves text-background separation
+
+7. **Sharpness Enhancement**
+   - Increases sharpness by 1.2× using `ImageEnhance.Sharpness`
+   - Enhances edge definition for better character recognition
+
+8. **Adaptive Padding**
+   - Adds 50px padding around all edges
+   - Padding color: black if image is dark (avg brightness < 128), white if bright
+   - Helps OCR engines detect edge characters
+
+9. **Array Conversion & Validation**
+   - Converts PIL Image to NumPy array (uint8 format)
+   - Validates and clips values to [0, 255] range
+   - Returns both NumPy array (for OCR) and PIL Image (for metadata)
+
 ## Dictionary Management
 
 ### Dictionary Structure
@@ -324,17 +378,6 @@ python scripts/report_unmapped.py unmapped_chars.json suggestions.json
 
 This generates a template file with unmapped characters that you can fill in and merge into the dictionary.
 
-## Testing
-
-Run basic tests:
-```bash
-python tests/test_translator.py
-```
-
-Or use pytest:
-```bash
-pytest tests/test_translator.py
-```
 
 ## Error Handling
 
@@ -465,13 +508,55 @@ Set `INFERENCE_API_URL=http://localhost:8001` in your Next.js `.env` file.
 - **First request**: May be slower due to model loading (~20-60 seconds for OCR engines, ~30 seconds for MarianMT, ~3-5 minutes for Qwen)
 - **Parallel processing**: OCR engines run simultaneously, so total time ≈ max(Time(EasyOCR), Time(PaddleOCR))
 
+## Image Preprocessing Details
+
+The preprocessing pipeline performs the following operations:
+
+1. **Format Validation**: Ensures image is JPEG, PNG, or WEBP format
+2. **Dimension Validation**: Checks minimum (50×50px) and maximum (4000×4000px) dimensions
+3. **Large Image Resizing**: Proportionally resizes images exceeding 4000px (maintains aspect ratio)
+4. **Color Mode Conversion**: Converts all images to RGB color space
+5. **Small Image Upscaling**: Upscales images smaller than 300px to improve OCR accuracy
+6. **Contrast Enhancement**: Increases contrast by 1.3× to improve text-background separation
+7. **Sharpness Enhancement**: Increases sharpness by 1.2× to enhance edge definition
+8. **Adaptive Padding**: Adds 50px padding with color chosen based on image brightness (black for dark images, white for bright images)
+9. **Array Conversion**: Converts PIL Image to NumPy array with proper dtype validation
+
+## Testing
+
+### Smoke Test
+
+A pipeline smoke test is available to verify end-to-end execution:
+
+```bash
+cd services/inference
+python -m pytest tests/test_pipeline_smoke.py -v
+```
+
+This test verifies that the full OCR → translation → refinement pipeline executes without crashing. It does not test correctness or quality, only survivability.
+
+### Translator Tests
+
+Run translator unit tests:
+
+```bash
+python tests/test_translator.py
+```
+
+Or use pytest:
+
+```bash
+pytest tests/test_translator.py
+```
+
 ## Logging
 
 The service uses Python's logging module with INFO level by default. Logs include:
 - OCR engine initialization status
-- Image preprocessing steps
+- Image preprocessing steps (format validation, resizing, enhancement)
 - OCR processing progress (both engines)
 - Alignment and fusion statistics
+- Translation engine status (MarianMT, Qwen)
 - Error details and stack traces
 
 To change log level, modify the `logging.basicConfig()` call in `main.py`.
