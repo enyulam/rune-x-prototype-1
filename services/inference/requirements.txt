@@ -1,8 +1,22 @@
+# Core FastAPI dependencies
 fastapi==0.110.0
 uvicorn==0.30.0
+pydantic>=2.0.0
+
+# Image processing
 pillow==10.4.0
+numpy>=1.24.0
 opencv-python-headless==4.10.0.84
+
+# OCR Engines - Hybrid System (EasyOCR + PaddleOCR)
 easyocr==1.7.1
-# Install an appropriate torch build for your Python/OS (CPU-only example):
+paddlepaddle>=2.6.1
+paddleocr>=2.7.0.3
+
+# Note: EasyOCR requires torch and torchvision
+# Install appropriate torch build for your Python/OS (CPU-only example):
 # torch>=2.0.0
 # torchvision>=0.15.0
+# 
+# For GPU support, install CUDA-enabled versions:
+# See: https://pytorch.org/get-started/locally/
