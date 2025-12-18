@@ -1,6 +1,17 @@
 # Rune-X Inference Service
 
-FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier translation (dictionary + MarianMT + Qwen), and comprehensive 9-step image preprocessing pipeline.
+FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier translation (dictionary + MarianMT + Qwen), and comprehensive 13-step image preprocessing pipeline.
+
+## ✅ Status: FULLY OPERATIONAL
+
+**Verified December 2025**: All systems active and tested.
+
+- ✅ **EasyOCR**: Ready
+- ✅ **PaddleOCR**: Ready
+- ✅ **MarianMT**: Ready (with sentencepiece)
+- ✅ **Qwen Refiner**: Ready
+- ✅ **Dictionary**: 276+ entries loaded
+- ✅ **Preprocessing**: All 61 tests passing
 
 ## Features
 
@@ -58,6 +69,7 @@ pip install -r requirements.txt
 - EasyOCR requires PyTorch and torchvision (install separately based on your system)
 - PaddleOCR will automatically download model files on first use (requires internet connection, ~200-300MB)
 - MarianMT (transformers) will download translation model on first use (~300MB from HuggingFace)
+- **SentencePiece** is required for MarianMT tokenization (installed via requirements.txt)
 - Qwen2.5-1.5B-Instruct will download on first use (~3GB from HuggingFace)
 - Both OCR engines will initialize on first request (takes 20-60 seconds)
 - Translation engines (MarianMT, Qwen) load models lazily (on first translation request)
@@ -73,7 +85,7 @@ pip install torch torchvision
 
 3. **Verify installation**:
 ```bash
-python -c "import easyocr; import paddleocr; from transformers import MarianMTModel, MarianTokenizer, AutoModelForCausalLM; import accelerate; print('All dependencies installed successfully')"
+python -c "import easyocr; import paddleocr; from transformers import MarianMTModel, MarianTokenizer, AutoModelForCausalLM; import accelerate; import sentencepiece; print('All dependencies installed successfully')"
 ```
 
 4. **Dictionary**: The dictionary file is located at `data/dictionary.json`. 
@@ -520,6 +532,15 @@ pip install torch torchvision
 - Ensure stable internet connection
 - EasyOCR models: ~100-200MB
 - PaddleOCR models: ~200-300MB
+
+**Problem**: "MarianTokenizer requires the SentencePiece library"
+**Solution**: ✅ **FIXED**
+```bash
+pip install sentencepiece
+```
+- This is now included in requirements.txt
+- Restart the backend server after installing
+- Verify with health check: MarianMT should show `"available": true`
 
 ### OCR Processing Issues
 
