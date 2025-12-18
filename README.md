@@ -15,10 +15,14 @@ An advanced multimodal AI platform for ancient script interpretation, reconstruc
 - ✅ **MarianMT Neural Translation** - Active (with sentencepiece installed)
 - ✅ **Qwen LLM Refinement** - Active
 
-The platform uses a FastAPI backend service with a **hybrid OCR system** that runs both EasyOCR and PaddleOCR in parallel, then fuses their outputs at the character level. This approach provides:
+The platform uses a FastAPI backend service with a **hybrid OCR system** that runs both EasyOCR and PaddleOCR in parallel, then fuses their outputs at the character level using a dedicated **OCR Fusion Module**. This approach provides:
 - **Dual OCR Engines**: EasyOCR (Chinese Simplified + English) and PaddleOCR (Chinese) run simultaneously
-- **Character-Level Fusion**: Results from both engines are aligned using IoU-based matching and fused, preserving all character candidates
+- **Modular OCR Fusion**: Production-grade `ocr_fusion.py` module with IoU-based alignment, dictionary-guided tie-breaking, and quality metrics
+- **Character-Level Fusion**: Results from both engines are aligned using greedy IoU matching and fused, preserving all character candidates
+- **Intelligent Tie-Breaking**: Dictionary-guided selection when multiple OCR engines produce equal confidence results
+- **Quality Metrics**: Real-time confidence scores and translation coverage percentages
 - **Enhanced Accuracy**: Multiple hypotheses per character position improve recognition of difficult or stylized text
+- **Comprehensive Testing**: 30 unit tests ensuring fusion reliability (100% pass rate)
 - **Modular Image Preprocessing**: Production-grade 13-step preprocessing pipeline with two-tier architecture (8 core + 4 optional + validation), fully configurable via environment variables, comprehensively tested with 61 unit tests
 - **Three-Tier Translation System**: 
   - **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries (character-level meanings)

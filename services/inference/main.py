@@ -9,7 +9,6 @@ Run with:
 import io
 import logging
 from typing import List, Optional, Tuple, Dict, Any
-from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
@@ -22,6 +21,17 @@ import easyocr
 from translator import get_translator
 from sentence_translator import get_sentence_translator
 from qwen_refiner import get_qwen_refiner
+
+# Import OCR fusion module
+from ocr_fusion import (
+    NormalizedOCRResult,
+    CharacterCandidate,
+    FusedPosition,
+    Glyph,
+    calculate_iou,
+    align_ocr_outputs,
+    fuse_character_candidates
+)
 
 # Import new modular preprocessing system
 import sys
@@ -53,40 +63,6 @@ MAX_IMAGE_DIMENSION = 4000  # Max width or height
 MIN_IMAGE_DIMENSION = 50  # Min width or height
 OCR_TIMEOUT = 30  # seconds
 SUPPORTED_FORMATS = {'image/jpeg', 'image/jpg', 'image/png', 'image/webp'}
-
-
-# Normalized OCR result structure
-@dataclass
-class NormalizedOCRResult:
-    """Normalized OCR result from any engine."""
-    bbox: List[float]  # [x1, y1, x2, y2]
-    char: str
-    confidence: float
-    source: str  # "easyocr" or "paddleocr"
-
-
-# Fused character candidate structure
-@dataclass
-class CharacterCandidate:
-    """Single character candidate from an OCR engine."""
-    char: str
-    confidence: float
-    source: str
-
-
-@dataclass
-class FusedPosition:
-    """Fused character position with multiple candidates."""
-    position: int
-    bbox: List[float]  # [x1, y1, x2, y2]
-    candidates: List[CharacterCandidate]
-
-
-class Glyph(BaseModel):
-    symbol: str
-    bbox: Optional[List[float]] = None  # [x, y, w, h]
-    confidence: float
-    meaning: Optional[str] = None
 
 
 class InferenceResponse(BaseModel):
@@ -375,265 +351,6 @@ def run_paddleocr(ocr_reader, img_array: np.ndarray) -> List[NormalizedOCRResult
         return []
 
 
-def calculate_iou(bbox1: List[float], bbox2: List[float]) -> float:
-    """
-    Calculate Intersection over Union (IoU) between two bounding boxes.
-    
-    Args:
-        bbox1: [x1, y1, x2, y2]
-        bbox2: [x1, y1, x2, y2]
-        
-    Returns:
-        IoU value between 0 and 1
-    """
-    x1_1, y1_1, x2_1, y2_1 = bbox1
-    x1_2, y1_2, x2_2, y2_2 = bbox2
-    
-    # Calculate intersection
-    x1_i = max(x1_1, x1_2)
-    y1_i = max(y1_1, y1_2)
-    x2_i = min(x2_1, x2_2)
-    y2_i = min(y2_1, y2_2)
-    
-    if x2_i <= x1_i or y2_i <= y1_i:
-        return 0.0
-    
-    intersection = (x2_i - x1_i) * (y2_i - y1_i)
-    
-    # Calculate union
-    area1 = (x2_1 - x1_1) * (y2_1 - y1_1)
-    area2 = (x2_2 - x1_2) * (y2_2 - y1_2)
-    union = area1 + area2 - intersection
-    
-    if union == 0:
-        return 0.0
-    
-    return intersection / union
-
-
-def align_ocr_outputs(
-    easyocr_results: List[NormalizedOCRResult],
-    paddleocr_results: List[NormalizedOCRResult],
-    iou_threshold: float = 0.3
-) -> List[FusedPosition]:
-    """
-    Align OCR results from both engines using IoU-based matching.
-    Handles character-level alignment preserving all candidates from both engines.
-    
-    Args:
-        easyocr_results: Normalized EasyOCR results
-        paddleocr_results: Normalized PaddleOCR results
-        iou_threshold: Minimum IoU for considering boxes as aligned
-        
-    Returns:
-        List of fused positions with aligned candidates
-    """
-    fused_positions = []
-    used_easyocr = set()
-    used_paddleocr = set()
-    
-    # Sort both result sets by reading order (top-to-bottom, left-to-right)
-    # Primary sort by y1 (top), secondary by x1 (left)
-    easyocr_sorted = sorted(enumerate(easyocr_results), 
-                            key=lambda x: (x[1].bbox[1], x[1].bbox[0]))
-    paddleocr_sorted = sorted(enumerate(paddleocr_results),
-                              key=lambda x: (x[1].bbox[1], x[1].bbox[0]))
-    
-    # Create position lists for sequential matching
-    easyocr_positions = list(easyocr_sorted)
-    paddleocr_positions = list(paddleocr_sorted)
-    
-    # Match results using greedy IoU-based alignment
-    position_idx = 0
-    easyocr_ptr = 0
-    paddleocr_ptr = 0
-    
-    while easyocr_ptr < len(easyocr_positions) or paddleocr_ptr < len(paddleocr_positions):
-        # Get current candidates
-        easyocr_candidate = None
-        paddleocr_candidate = None
-        
-        if easyocr_ptr < len(easyocr_positions):
-            easyocr_idx, easyocr_result = easyocr_positions[easyocr_ptr]
-            if easyocr_idx not in used_easyocr:
-                easyocr_candidate = (easyocr_idx, easyocr_result)
-        
-        if paddleocr_ptr < len(paddleocr_positions):
-            paddleocr_idx, paddleocr_result = paddleocr_positions[paddleocr_ptr]
-            if paddleocr_idx not in used_paddleocr:
-                paddleocr_candidate = (paddleocr_idx, paddleocr_result)
-        
-        # If both candidates exist, check if they align
-        if easyocr_candidate and paddleocr_candidate:
-            iou = calculate_iou(easyocr_candidate[1].bbox, paddleocr_candidate[1].bbox)
-            
-            if iou >= iou_threshold:
-                # Aligned - create fused position with both candidates
-                candidates = [
-                    CharacterCandidate(
-                        char=easyocr_candidate[1].char,
-                        confidence=easyocr_candidate[1].confidence,
-                        source="easyocr"
-                    ),
-                    CharacterCandidate(
-                        char=paddleocr_candidate[1].char,
-                        confidence=paddleocr_candidate[1].confidence,
-                        source="paddleocr"
-                    )
-                ]
-                
-                # Average bbox
-                bbox1 = easyocr_candidate[1].bbox
-                bbox2 = paddleocr_candidate[1].bbox
-                avg_bbox = [
-                    (bbox1[0] + bbox2[0]) / 2,
-                    (bbox1[1] + bbox2[1]) / 2,
-                    (bbox1[2] + bbox2[2]) / 2,
-                    (bbox1[3] + bbox2[3]) / 2
-                ]
-                
-                fused_positions.append(
-                    FusedPosition(
-                        position=position_idx,
-                        bbox=avg_bbox,
-                        candidates=candidates
-                    )
-                )
-                
-                used_easyocr.add(easyocr_candidate[0])
-                used_paddleocr.add(paddleocr_candidate[0])
-                easyocr_ptr += 1
-                paddleocr_ptr += 1
-                position_idx += 1
-                continue
-        
-        # Not aligned - add the one that comes first in reading order
-        if easyocr_candidate and paddleocr_candidate:
-            # Compare reading order
-            easy_y, easy_x = easyocr_candidate[1].bbox[1], easyocr_candidate[1].bbox[0]
-            paddle_y, paddle_x = paddleocr_candidate[1].bbox[1], paddleocr_candidate[1].bbox[0]
-            
-            if easy_y < paddle_y or (easy_y == paddle_y and easy_x < paddle_x):
-                # EasyOCR comes first
-                fused_positions.append(
-                    FusedPosition(
-                        position=position_idx,
-                        bbox=easyocr_candidate[1].bbox,
-                        candidates=[
-                            CharacterCandidate(
-                                char=easyocr_candidate[1].char,
-                                confidence=easyocr_candidate[1].confidence,
-                                source="easyocr"
-                            )
-                        ]
-                    )
-                )
-                used_easyocr.add(easyocr_candidate[0])
-                easyocr_ptr += 1
-            else:
-                # PaddleOCR comes first
-                fused_positions.append(
-                    FusedPosition(
-                        position=position_idx,
-                        bbox=paddleocr_candidate[1].bbox,
-                        candidates=[
-                            CharacterCandidate(
-                                char=paddleocr_candidate[1].char,
-                                confidence=paddleocr_candidate[1].confidence,
-                                source="paddleocr"
-                            )
-                        ]
-                    )
-                )
-                used_paddleocr.add(paddleocr_candidate[0])
-                paddleocr_ptr += 1
-            position_idx += 1
-        elif easyocr_candidate:
-            # Only EasyOCR candidate available
-            fused_positions.append(
-                FusedPosition(
-                    position=position_idx,
-                    bbox=easyocr_candidate[1].bbox,
-                    candidates=[
-                        CharacterCandidate(
-                            char=easyocr_candidate[1].char,
-                            confidence=easyocr_candidate[1].confidence,
-                            source="easyocr"
-                        )
-                    ]
-                )
-            )
-            used_easyocr.add(easyocr_candidate[0])
-            easyocr_ptr += 1
-            position_idx += 1
-        elif paddleocr_candidate:
-            # Only PaddleOCR candidate available
-            fused_positions.append(
-                FusedPosition(
-                    position=position_idx,
-                    bbox=paddleocr_candidate[1].bbox,
-                    candidates=[
-                        CharacterCandidate(
-                            char=paddleocr_candidate[1].char,
-                            confidence=paddleocr_candidate[1].confidence,
-                            source="paddleocr"
-                        )
-                    ]
-                )
-            )
-            used_paddleocr.add(paddleocr_candidate[0])
-            paddleocr_ptr += 1
-            position_idx += 1
-        else:
-            # Both are used, advance both pointers
-            easyocr_ptr += 1
-            paddleocr_ptr += 1
-    
-    logger.info("Aligned %d positions from %d EasyOCR + %d PaddleOCR results",
-                len(fused_positions), len(easyocr_results), len(paddleocr_results))
-    
-    return fused_positions
-
-
-def fuse_character_candidates(fused_positions: List[FusedPosition]) -> Tuple[List[Glyph], str]:
-    """
-    Convert fused positions to Glyph objects and full text string.
-    For each position, use the highest-confidence candidate as the primary character.
-    
-    Args:
-        fused_positions: List of fused character positions
-        
-    Returns:
-        Tuple of (list of Glyph objects, full text string)
-    """
-    glyphs = []
-    full_text_parts = []
-    
-    for pos in fused_positions:
-        if not pos.candidates:
-            continue
-        
-        # Select highest confidence candidate as primary
-        best_candidate = max(pos.candidates, key=lambda c: c.confidence)
-        
-        # Convert bbox from [x1, y1, x2, y2] to [x, y, w, h] for Glyph
-        x1, y1, x2, y2 = pos.bbox
-        bbox_glyph = [x1, y1, x2 - x1, y2 - y1]
-        
-        glyphs.append(
-            Glyph(
-                symbol=best_candidate.char,
-                bbox=bbox_glyph,
-                confidence=best_candidate.confidence,
-                meaning=None
-            )
-        )
-        full_text_parts.append(best_candidate.char)
-    
-    full_text = "".join(full_text_parts)
-    return glyphs, full_text
-
-
 # Initialize OCR engines and translators
 easyocr_reader = _load_easyocr()
 paddleocr_reader = _load_paddleocr()
@@ -836,7 +553,14 @@ async def process_image(file: UploadFile = File(...)):
             )
         
         # Convert to Glyph objects and full text
-        glyphs, full_text = fuse_character_candidates(fused_positions)
+        # Add lookup_character method wrapper if translator doesn't have it
+        if translator and not hasattr(translator, "lookup_character"):
+            # Wrap lookup_entry to match expected API
+            translator.lookup_character = lambda char: translator.lookup_entry(char)
+        
+        glyphs, full_text, ocr_confidence, ocr_coverage = fuse_character_candidates(
+            fused_positions, translator=translator
+        )
         
         if not full_text or not full_text.strip():
             raise HTTPException(
@@ -844,8 +568,11 @@ async def process_image(file: UploadFile = File(...)):
                 detail="No text could be extracted from the image."
             )
         
-        logger.info("Fused %d positions into %d glyphs, text length: %d",
-                    len(fused_positions), len(glyphs), len(full_text))
+        logger.info(
+            "Fused %d positions into %d glyphs, text length: %d (confidence: %.2f%%, coverage: %.1f%%)",
+            len(fused_positions), len(glyphs), len(full_text),
+            ocr_confidence * 100, ocr_coverage
+        )
         
     except HTTPException:
         raise
@@ -898,13 +625,14 @@ async def process_image(file: UploadFile = File(...)):
         else:
             enriched_glyphs.append(original_glyph)
     
-    # Calculate average confidence
-    if enriched_glyphs:
-        avg_confidence = sum(g.confidence for g in enriched_glyphs) / len(enriched_glyphs)
-    else:
-        avg_confidence = 0.0
+    # Use OCR metrics from fusion step (computed during fuse_character_candidates)
+    # ocr_confidence: Average confidence of OCR detections (0.0-1.0)
+    # ocr_coverage: Percentage of characters with dictionary entries (0.0-100.0)
     
-    logger.info("Processing complete: %d glyphs, confidence: %.2f", len(enriched_glyphs), avg_confidence)
+    logger.info(
+        "Processing complete: %d glyphs, OCR confidence: %.2f%%, coverage: %.1f%%",
+        len(enriched_glyphs), ocr_confidence * 100, ocr_coverage
+    )
     
     # Log the extracted OCR text for debugging
     logger.info("Extracted OCR text (first 200 chars): %s", full_text[:200] if full_text else "Empty")
@@ -958,9 +686,9 @@ async def process_image(file: UploadFile = File(...)):
         sentence_translation=sentence_translation,  # Neural sentence translation (MarianMT)
         refined_translation=refined_translation,  # Qwen-refined translation
         qwen_status=qwen_status,  # Status: "available", "unavailable", "failed", "skipped"
-        confidence=avg_confidence,
+        confidence=ocr_confidence,  # OCR fusion average confidence (0.0-1.0)
         glyphs=enriched_glyphs,
         unmapped=translation_result.get("unmapped", []),
-        coverage=translation_result.get("coverage", 0.0),
+        coverage=ocr_coverage,  # OCR fusion dictionary coverage (0.0-100.0 percentage)
         dictionary_version=translation_result.get("dictionary_version")
     )
