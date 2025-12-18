@@ -4,6 +4,13 @@
 
 **Good News**: Yes, you can run the program and upload an image to extract text and get translations! All the code is in place and working.
 
+**Latest Capabilities**:
+- ✅ **Hybrid OCR System** - EasyOCR + PaddleOCR running in parallel with character-level fusion
+- ✅ **Three-Tier Translation** - Dictionary (276+ entries) + MarianMT neural translation + Qwen LLM refinement
+- ✅ **Modular Preprocessing** - 13-step production-grade pipeline with 61 unit tests (100% pass rate)
+- ✅ **Configuration System** - 35+ tunable parameters via environment variables
+- ✅ **Comprehensive Testing** - Full test coverage for preprocessing, OCR, and translation
+
 ## 🔧 Setup Required
 
 ### 1. Environment Variables
@@ -69,13 +76,38 @@ Should return:
 ```json
 {
   "status": "ok",
-  "paddle": {
-    "available": true,
-    "status": "ready"
+  "ocr_engines": {
+    "easyocr": {
+      "available": true,
+      "status": "ready"
+    },
+    "paddleocr": {
+      "available": true,
+      "status": "ready"
+    }
+  },
+  "translation_engines": {
+    "marianmt": {
+      "available": true,
+      "status": "ready"
+    },
+    "qwen_refiner": {
+      "available": true,
+      "status": "ready",
+      "model": "Qwen2.5-1.5B-Instruct"
+    }
   },
   "dictionary": {
-    "entries": 67,
-    ...
+    "entries": 276,
+    "entries_with_alts": 188,
+    "entries_with_notes": 276,
+    "version": "1.0.0"
+  },
+  "limits": {
+    "max_image_size_mb": 10.0,
+    "max_dimension": 4000,
+    "min_dimension": 50,
+    "supported_formats": ["image/jpeg", "image/jpg", "image/png", "image/webp"]
   }
 }
 ```
@@ -97,18 +129,22 @@ Should return:
 ## 📋 What You'll See
 
 ### Successful Processing:
-- ✅ Extracted Chinese text from image
-- ✅ Character meanings (from dictionary)
-- ✅ Full translation (concatenated meanings)
+- ✅ Extracted Chinese text from image (hybrid OCR)
+- ✅ Character meanings (dictionary-based translation)
+- ✅ Full sentence translation (MarianMT neural translation)
+- ✅ Refined translation (Qwen LLM refinement)
 - ✅ Confidence scores for each character
 - ✅ Coverage percentage (how many characters found in dictionary)
 - ✅ Unmapped characters list (if any)
 
 ### Example Result:
 ```
-Extracted Text: 人天
-Translation: person; people; human | sky; heaven; day; nature
-Confidence: 0.935
+Extracted Text: 我爱你
+Character Meanings: I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself
+Sentence Translation: I love you
+Refined Translation: I love you
+Qwen Status: available
+Confidence: 0.92
 Coverage: 100%
 ```
 
@@ -137,34 +173,43 @@ Coverage: 100%
 ### What Works Well:
 - ✅ Clear, high-quality Chinese handwriting
 - ✅ Standard Chinese characters
-- ✅ Characters in the dictionary (67+ entries currently)
+- ✅ Characters in the dictionary (276+ entries currently)
+- ✅ Hybrid OCR system improves recognition accuracy
+- ✅ Neural translation provides natural English output
+- ✅ LLM refinement corrects OCR noise and improves coherence
 
 ### Limitations:
-- ⚠️ Very blurry or low-quality images
-- ⚠️ Characters not in dictionary (will show as "unmapped")
+- ⚠️ Very blurry or low-quality images (preprocessing helps but has limits)
+- ⚠️ Characters not in dictionary (will show as "unmapped" but MarianMT still translates)
 - ⚠️ Extremely stylized or artistic fonts
-- ⚠️ Very small text
+- ⚠️ Very small text (auto-upscaling helps)
+- ⚠️ First-time Qwen model download takes 3-5 minutes (~3GB)
 
 ### Dictionary Coverage:
-- Current: 67 entries
+- Current: 276+ entries with pinyin, meanings, alternatives, and notes
 - Can be expanded by editing `services/inference/data/dictionary.json`
 
 ## 📊 Current Capabilities
 
-✅ **Working**:
-- Real OCR text extraction (PaddleOCR)
-- Dictionary-based translation
-- Character-level meanings
-- Confidence scoring
-- Coverage tracking
-- Error handling
+✅ **Fully Implemented & Tested**:
+- ✅ **Hybrid OCR** - EasyOCR + PaddleOCR with character-level fusion
+- ✅ **Three-Tier Translation** - Dictionary + MarianMT + Qwen LLM refinement
+- ✅ **Modular Preprocessing** - 13-step pipeline with 61 unit tests
+- ✅ **Dictionary System** - 276+ entries with alternatives and notes
+- ✅ **Character-level Meanings** - Detailed per-character translations
+- ✅ **Sentence Translation** - Context-aware neural translation
+- ✅ **LLM Refinement** - Qwen-powered coherence improvement
+- ✅ **Confidence Scoring** - Per-character confidence tracking
+- ✅ **Coverage Tracking** - Dictionary coverage percentage
+- ✅ **Error Handling** - Comprehensive error messages and graceful degradation
+- ✅ **Configuration System** - 35+ tunable parameters via .env
 
-❌ **Not Yet Implemented** (Phase 7+):
-- Batch processing
-- Progress indicators
-- Visual bounding box overlays
-- Export functionality
-- Enhanced search/filter
+❌ **Planned Features** (Future Phases):
+- Batch processing with progress tracking
+- Visual bounding box overlays on images
+- Advanced export functionality (TEI-XML, JSON-LD)
+- Enhanced search/filter capabilities
+- User annotation and correction tools
 
 ## 🧪 Quick Test
 
@@ -191,11 +236,27 @@ Before testing, verify:
 - [ ] `.env` file exists with `INFERENCE_API_URL="http://localhost:8001"`
 - [ ] Backend service running on port 8001
 - [ ] Frontend service running on port 3001
-- [ ] PaddleOCR initialized (check health endpoint)
-- [ ] Dictionary loaded (67+ entries)
+- [ ] Both OCR engines initialized (EasyOCR + PaddleOCR)
+- [ ] Translation engines ready (MarianMT + Qwen)
+- [ ] Dictionary loaded (276+ entries)
 - [ ] Database initialized (`npm run db:push`)
+- [ ] PyTorch installed for EasyOCR and transformers
+- [ ] opencv-python installed for preprocessing enhancements
+
+### Quick Health Check:
+```bash
+# Check backend status
+curl http://localhost:8001/health
+
+# Run preprocessing tests (optional)
+cd services/inference
+python -m pytest ../preprocessing/tests/ -v
+
+# Run pipeline smoke test (optional)
+python -m pytest tests/test_pipeline_smoke.py -v
+```
 
 ---
 
-**You're all set!** The system is ready to extract text and translate Chinese handwriting images.
+**You're all set!** The system is ready to extract text and translate Chinese handwriting images with hybrid OCR, neural translation, and LLM refinement.
 

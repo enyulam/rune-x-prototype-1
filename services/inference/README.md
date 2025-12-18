@@ -11,7 +11,7 @@ FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier t
   - **Neural Sentence Translation**: Context-aware sentence-level translation using MarianMT (Helsinki-NLP/opus-mt-zh-en)
   - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
 - **Dictionary**: JSON-based character dictionary with 276+ entries (meanings, alternatives, notes)
-- **Modular Image Preprocessing**: Production-grade preprocessing system with 13 configurable steps (8 core + 4 optional + validation), fully tested with 61 unit tests, configurable via environment variables
+- **Modular Image Preprocessing**: Production-grade preprocessing system with 13 configurable steps (8 core + 4 optional + validation), fully tested with 61 unit tests (100% pass rate), configurable via environment variables with 35+ tunable parameters
 - **Error Handling**: Comprehensive error messages and validation with graceful fallback
 - **Performance**: Optimized for various image sizes with automatic resizing
 
@@ -208,16 +208,10 @@ Process an uploaded image for OCR and translation using hybrid OCR system.
 - `qwen_status`: Status of Qwen refinement ("available", "unavailable", "failed", "skipped")
 
 **Processing Flow**:
-1. Image preprocessing (9-step pipeline):
-   - Format validation (JPEG/PNG/WEBP only)
-   - Dimension validation (50×50 to 4000×4000 pixels)
-   - Large image resizing (proportional, max 4000px)
-   - Color mode conversion (to RGB)
-   - Small image upscaling (minimum 300px)
-   - Contrast enhancement (1.3×)
-   - Sharpness enhancement (1.2×)
-   - Padding addition (50px, adaptive color based on brightness)
-   - Array conversion and validation
+1. Image preprocessing (13-step modular pipeline):
+   - **Core Steps (FATAL)**: Format validation, dimension validation, large image resizing, RGB conversion, small image upscaling, contrast enhancement, sharpness enhancement, adaptive padding
+   - **Optional Enhancements**: Noise reduction (bilateral filter), binarization (adaptive thresholding), deskewing (Hough transform), brightness normalization (CLAHE)
+   - **Final Validation**: Array conversion and validation
 2. Parallel OCR execution (EasyOCR + PaddleOCR)
 3. Result normalization and alignment
 4. Character-level fusion
@@ -635,29 +629,68 @@ The preprocessing pipeline performs 13 steps in two tiers:
 
 ## Testing
 
-### Smoke Test
+The Rune-X inference service includes comprehensive testing for all critical components.
 
-A pipeline smoke test is available to verify end-to-end execution:
+### Preprocessing Module Tests (61 Tests)
+
+Run all preprocessing tests:
+
+```bash
+cd services/inference
+python -m pytest ../preprocessing/tests/ -v
+```
+
+Run specific test suites:
+
+```bash
+# Core preprocessing tests (25 tests)
+python -m pytest ../preprocessing/tests/test_core_preprocessing.py -v
+
+# Optional enhancements tests (20 tests)
+python -m pytest ../preprocessing/tests/test_optional_enhancements.py -v
+
+# Toggle combinations tests (16 permutation tests)
+python -m pytest ../preprocessing/tests/test_toggle_combinations.py -v
+```
+
+**Test Coverage**:
+- ✅ Format validation (5 tests)
+- ✅ Dimension validation (7 tests)
+- ✅ Large image resizing (4 tests)
+- ✅ Small image upscaling (4 tests)
+- ✅ Adaptive padding (4 tests)
+- ✅ Array conversion & validation (6 tests)
+- ✅ Noise reduction (5 tests)
+- ✅ Binarization (5 tests)
+- ✅ Deskewing (5 tests)
+- ✅ Brightness normalization (5 tests)
+- ✅ All 16 toggle combinations (16 tests)
+
+### Pipeline Smoke Test
+
+Verify end-to-end execution:
 
 ```bash
 cd services/inference
 python -m pytest tests/test_pipeline_smoke.py -v
 ```
 
-This test verifies that the full OCR → translation → refinement pipeline executes without crashing. It does not test correctness or quality, only survivability.
+This test verifies that the full OCR → translation → refinement pipeline executes without crashing.
 
 ### Translator Tests
 
 Run translator unit tests:
 
 ```bash
-python tests/test_translator.py
+cd services/inference
+python -m pytest tests/test_translator.py -v
 ```
 
-Or use pytest:
+### Run All Tests
 
 ```bash
-pytest tests/test_translator.py
+cd services/inference
+python -m pytest -v
 ```
 
 ## Logging

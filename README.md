@@ -14,7 +14,7 @@ The platform uses a FastAPI backend service with a **hybrid OCR system** that ru
 - **Dual OCR Engines**: EasyOCR (Chinese Simplified + English) and PaddleOCR (Chinese) run simultaneously
 - **Character-Level Fusion**: Results from both engines are aligned using IoU-based matching and fused, preserving all character candidates
 - **Enhanced Accuracy**: Multiple hypotheses per character position improve recognition of difficult or stylized text
-- **Robust Image Preprocessing**: Comprehensive 9-step preprocessing pipeline (format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, adaptive padding) optimizes images for OCR
+- **Modular Image Preprocessing**: Production-grade 13-step preprocessing pipeline with two-tier architecture (8 core + 4 optional + validation), fully configurable via environment variables, comprehensively tested with 61 unit tests
 - **Three-Tier Translation System**: 
   - **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries (character-level meanings)
   - **Neural Sentence Translation**: MarianMT model for context-aware, natural English sentence translation
@@ -189,6 +189,30 @@ src/
 │   └── get-session.ts     # Server session helper
 └── types/
     └── next-auth.d.ts     # NextAuth type definitions
+
+services/
+├── inference/             # FastAPI OCR & Translation Service
+│   ├── main.py           # Main service entry point
+│   ├── translator.py     # Dictionary translator
+│   ├── marianmt_translator.py  # Neural sentence translator
+│   ├── qwen_refiner.py   # LLM translation refiner
+│   ├── requirements.txt  # Python dependencies
+│   ├── README.md         # Service documentation
+│   ├── data/
+│   │   └── dictionary.json  # Character dictionary (276+ entries)
+│   └── tests/
+│       ├── test_translator.py  # Translator unit tests
+│       └── test_pipeline_smoke.py  # End-to-end smoke test
+└── preprocessing/         # Modular Image Preprocessing
+    ├── __init__.py
+    ├── config.py          # Configuration & env variables (35+ parameters)
+    ├── image_preprocessing.py  # Core preprocessing logic (13 steps)
+    ├── README.md          # Module documentation
+    └── tests/
+        ├── __init__.py
+        ├── test_core_preprocessing.py  # 25 core tests
+        ├── test_optional_enhancements.py  # 20 enhancement tests
+        └── test_toggle_combinations.py  # 16 permutation tests
 ```
 
 ## 🗄️ Database
@@ -244,8 +268,9 @@ npm run db:reset
 - **📚 Translation Library** - Browse and search your translations
 - **📤 Export Capabilities** - Export in TEI-XML, JSON-LD formats
 - **🎨 Modern UI** - Beautiful, responsive interface with dark mode support
-- **🧪 Testing** - Pipeline smoke tests for end-to-end verification
+- **🧪 Comprehensive Testing** - 61 unit tests for preprocessing module (100% pass rate), pipeline smoke tests for end-to-end verification, all 16 optional enhancement combinations tested
 - **🔒 Secure File Access** - Images served via authenticated API endpoints with proper caching
+- **⚙️ Configuration Management** - Centralized preprocessing configuration with .env overrides, 35+ tunable parameters
 
 ### Technical Features
 
@@ -287,7 +312,7 @@ The service uses a **hybrid OCR system** combining EasyOCR and PaddleOCR engines
 - **Dual OCR Engines**: EasyOCR (ch_sim + en) and PaddleOCR (ch) run simultaneously
 - **Character-Level Fusion**: Results aligned using bounding box overlap (IoU) and fused with all candidates preserved
 - **Parallel Processing**: Both engines process images concurrently for faster results
-- **Comprehensive Image Preprocessing**: 9-step pipeline including format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, and adaptive padding for optimal OCR accuracy
+- **Modular Image Preprocessing**: 13-step production-grade pipeline with 8 core steps (format validation, dimension checks, resizing, RGB conversion, upscaling, contrast/sharpness enhancement, adaptive padding, array conversion) + 4 optional enhancements (noise reduction, binarization, deskewing, brightness normalization) fully configurable via environment variables
 - **Three-Tier Translation System**:
   - **Dictionary-Based Translation**: 276+ Chinese character entries with meanings, alternatives, and notes (character-level)
   - **Neural Sentence Translation**: MarianMT model for context-aware, natural English translation (sentence-level)

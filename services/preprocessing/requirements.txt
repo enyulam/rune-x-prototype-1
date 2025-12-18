@@ -1,0 +1,28 @@
+# Image Preprocessing Module Dependencies
+# 
+# Note: This module is used by services/inference and shares its requirements.txt
+# These dependencies are already included in services/inference/requirements.txt
+# This file is provided for reference and standalone usage documentation.
+
+# Core dependencies (REQUIRED)
+pillow==10.4.0           # Image loading, format conversion, enhancements
+numpy>=1.24.0            # Array operations
+fastapi==0.110.0         # HTTPException for error handling
+python-dotenv>=1.0.0     # Environment variable loading
+
+# Optional dependencies (for enhanced features)
+opencv-python-headless==4.10.0.84  # Advanced enhancements (noise reduction, binarization, deskewing, brightness normalization)
+                                    # If not installed, optional enhancements are automatically disabled
+
+# Testing dependencies
+pytest>=7.0.0            # Test framework
+pytest-asyncio>=0.21.0   # Async test support
+
+# Installation:
+# pip install -r requirements.txt
+#
+# For standalone usage:
+# 1. Install core dependencies (pillow, numpy, fastapi, python-dotenv)
+# 2. Optionally install opencv-python-headless for enhanced features
+# 3. Create .env file with preprocessing configuration (see README.md)
+
