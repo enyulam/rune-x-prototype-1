@@ -1,0 +1,15 @@
+{
+  "python.defaultInterpreterPath": "./venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/services/inference"
+  ],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/services/inference"
+  ],
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}/services/inference"
+  }
+}
+
