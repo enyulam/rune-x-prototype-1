@@ -42,7 +42,8 @@ prisma/db/*.db-journal
 prisma/migrations/*.sql
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo

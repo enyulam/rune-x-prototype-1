@@ -2,6 +2,7 @@
 fastapi==0.110.0
 uvicorn==0.30.0
 pydantic>=2.0.0
+python-dotenv>=1.0.0
 
 # Image processing
 pillow==10.4.0
@@ -16,6 +17,7 @@ paddleocr>=2.7.0.3
 # Neural Machine Translation (MarianMT)
 # Provides sentence-level translation using Helsinki-NLP/opus-mt-zh-en model
 transformers>=4.57.3
+sentencepiece>=0.2.0  # Required for MarianMT tokenization
 sacremoses>=0.1.1  # Recommended for MarianMT tokenization
 
 # Qwen LLM Refinement
@@ -46,3 +48,7 @@ accelerate>=0.30.0  # Required for device_map="auto" when using CUDA
 # - MarianMT: ~300MB
 # - Qwen2.5-1.5B: ~3GB
 # - Total: ~4GB
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.21.0

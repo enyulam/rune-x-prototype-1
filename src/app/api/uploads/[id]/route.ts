@@ -7,7 +7,7 @@ import { getSession } from '@/lib/get-session'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -19,7 +19,8 @@ export async function GET(
       )
     }
 
-    const uploadId = params.id
+    // Await params to fix Next.js 15 async params requirement
+    const { id: uploadId } = await params
 
     // Get upload record to verify ownership and get file path
     const upload = await db.upload.findUnique({

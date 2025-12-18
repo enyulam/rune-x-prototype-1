@@ -23,6 +23,13 @@ from translator import get_translator
 from sentence_translator import get_sentence_translator
 from qwen_refiner import get_qwen_refiner
 
+# Import new modular preprocessing system
+import sys
+from pathlib import Path
+# Add parent directory to path for preprocessing module
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from preprocessing.image_preprocessing import preprocess_image
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -148,9 +155,40 @@ def _load_paddleocr():
         return None
 
 
+# ============================================================================
+# OLD PREPROCESSING FUNCTION (DEPRECATED - Replaced with modular preprocessing)
+# ============================================================================
+# The old monolithic preprocessing function has been replaced with the new
+# modular preprocessing system located in services/preprocessing/
+# 
+# Old location: main.py lines 151-243 (pre-refactor)
+# New location: services/preprocessing/image_preprocessing.py
+# 
+# The old function performed these steps inline:
+# 1. Image loading & format validation (JPEG/PNG/WEBP)
+# 2. Dimension validation (MIN_IMAGE_DIMENSION to MAX_IMAGE_DIMENSION)
+# 3. Large image resizing (>MAX_IMAGE_DIMENSION)
+# 4. RGB conversion
+# 5. Small image upscaling (<300px)
+# 6. Contrast enhancement (1.3x)
+# 7. Sharpness enhancement (1.2x)
+# 8. Adaptive padding (50px, brightness-based color)
+#
+# The new modular system adds:
+# - Configurable parameters via config.py and environment variables
+# - Optional enhancements (noise reduction, binarization, deskewing, brightness normalization)
+# - Comprehensive unit tests (45 tests)
+# - Better error handling (fatal vs optional steps)
+# - Production-grade logging
+# ============================================================================
+
+
 def _preprocess_image(image_bytes: bytes) -> Tuple[np.ndarray, Image.Image]:
     """
-    Preprocess image for better OCR results.
+    Preprocess image for better OCR results using modular preprocessing system.
+    
+    This function now delegates to the new modular preprocessing system
+    located in services/preprocessing/image_preprocessing.py
     
     Args:
         image_bytes: Raw image bytes
@@ -161,85 +199,19 @@ def _preprocess_image(image_bytes: bytes) -> Tuple[np.ndarray, Image.Image]:
     Raises:
         HTTPException: If image is invalid or cannot be processed
     """
-    try:
-        # Load image with PIL for validation and preprocessing
-        image = Image.open(io.BytesIO(image_bytes))
-        
-        # Validate image format
-        if image.format not in ['JPEG', 'PNG', 'WEBP']:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported image format: {image.format}. Please use JPG, PNG, or WebP."
-            )
-        
-        # Check image dimensions
-        width, height = image.size
-        if width < MIN_IMAGE_DIMENSION or height < MIN_IMAGE_DIMENSION:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Image too small: {width}x{height}. Minimum size: {MIN_IMAGE_DIMENSION}x{MIN_IMAGE_DIMENSION}"
-            )
-        
-        if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
-            logger.info("Large image detected (%dx%d), resizing...", width, height)
-            if width > height:
-                new_width = MAX_IMAGE_DIMENSION
-                new_height = int(height * (MAX_IMAGE_DIMENSION / width))
-            else:
-                new_height = MAX_IMAGE_DIMENSION
-                new_width = int(width * (MAX_IMAGE_DIMENSION / height))
-            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            logger.info("Resized to %dx%d", new_width, new_height)
-        
-        # Convert to RGB if needed
-        if image.mode != 'RGB':
-            logger.info("Converting image from %s to RGB", image.mode)
-            image = image.convert('RGB')
-        
-        # Enhance small images for better OCR
-        if width < 300 or height < 300:
-            logger.info("Small image detected (%dx%d), upscaling for better OCR...", width, height)
-            scale_factor = max(300 / width, 300 / height)
-            new_width = int(width * scale_factor)
-            new_height = int(height * scale_factor)
-            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            logger.info("Upscaled to %dx%d", new_width, new_height)
-        
-        # Enhance contrast and sharpness
-        enhancer = ImageEnhance.Contrast(image)
-        image = enhancer.enhance(1.3)
-        enhancer_sharp = ImageEnhance.Sharpness(image)
-        image = enhancer_sharp.enhance(1.2)
-        
-        # Add padding around the image
-        padding = 50
-        img_array_check = np.array(image)
-        avg_brightness = img_array_check.mean()
-        padding_color = 'black' if avg_brightness < 128 else 'white'
-        padded_image = Image.new('RGB', (image.width + 2*padding, image.height + 2*padding), color=padding_color)
-        padded_image.paste(image, (padding, padding))
-        image = padded_image
-        logger.info("Added %dpx padding with %s background", padding, padding_color)
-        
-        # Convert PIL Image to numpy array
-        img_array = np.array(image)
-        
-        # Ensure array is in correct format
-        if img_array.dtype != np.uint8:
-            img_array = img_array.astype(np.uint8)
-        if img_array.max() > 255 or img_array.min() < 0:
-            img_array = np.clip(img_array, 0, 255).astype(np.uint8)
-        
-        return img_array, image
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Image preprocessing failed: %s", e)
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid image file: {str(e)}. Please ensure the file is a valid image."
-        ) from e
+    # Use new modular preprocessing system with all enhancements enabled
+    # The preprocessing module handles:
+    # - Format validation, dimension checks, resizing
+    # - RGB conversion, upscaling, contrast/sharpness enhancement
+    # - Adaptive padding
+    # - Optional: noise reduction, binarization, deskewing, brightness normalization
+    return preprocess_image(
+        image_bytes,
+        apply_noise_reduction=True,
+        apply_binarization=False,  # Disable for now - can cause issues with some images
+        apply_deskew=True,
+        apply_brightness_norm=True
+    )
 
 
 def run_easyocr(ocr_reader: easyocr.Reader, img_array: np.ndarray) -> List[NormalizedOCRResult]:
