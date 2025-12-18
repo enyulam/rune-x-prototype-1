@@ -65,45 +65,156 @@ The platform uses a **hybrid OCR system** that combines EasyOCR and PaddleOCR en
 - **Empty File Check**: Rejects empty files
 
 ### Step 3.2: Image Preprocessing
-**Location**: `services/inference/main.py` → `_preprocess_image()`
+**Location**: `services/preprocessing/image_preprocessing.py` → `preprocess_image()`  
+**Wrapper**: `services/inference/main.py` → `_preprocess_image()`
 
-The preprocessing pipeline optimizes images for OCR through 9 sequential steps:
+The preprocessing system uses a **modular architecture** with two tiers of enhancements:
 
-1. **Load Image**: Opens image with PIL (Python Imaging Library) from bytes
-2. **Format Validation**: 
-   - Ensures JPEG, PNG, or WebP format
+#### **Core Preprocessing Steps (FATAL - Must succeed)**
+
+These steps are critical for OCR and will raise `HTTPException` if they fail:
+
+1. **Image Loading & Format Validation**
+   - Opens image with PIL from raw bytes
+   - Validates format: JPEG, PNG, or WebP
    - Raises HTTPException (400) if unsupported
-3. **Dimension Validation**: 
-   - Minimum: 50×50 pixels (raises HTTPException if too small)
-   - Maximum: 4000×4000 pixels (auto-resized if larger)
-4. **Large Image Resizing**:
-   - If width or height > 4000px, proportionally resizes to fit within 4000×4000px
+   - **Module**: `_validate_format()`
+
+2. **Dimension Validation**
+   - Minimum: 50×50 pixels
+   - Maximum: 4000×4000 pixels (before resizing)
+   - Raises HTTPException (400) if too small
+   - **Module**: `_validate_dimensions()`
+
+3. **Large Image Resizing**
+   - Triggers if width or height > 4000px
+   - Proportionally resizes to fit within 4000×4000px
    - Maintains aspect ratio using LANCZOS resampling
-5. **Color Mode Conversion**: 
-   - Converts non-RGB images to RGB
-   - Ensures consistent color space for OCR engines
-6. **Small Image Upscaling**:
-   - If image < 300px on any dimension:
-     - Calculates scale factor to reach 300px minimum
-     - Upscales using LANCZOS resampling
-   - Improves OCR accuracy for small images
-7. **Contrast Enhancement**:
-   - Increases contrast by 1.3× using `ImageEnhance.Contrast`
+   - **Module**: `_resize_large_image()`
+
+4. **RGB Color Conversion**
+   - Converts non-RGB modes (RGBA, L, P) to RGB
+   - Handles transparency by compositing on white background
+   - Ensures consistent color space for OCR
+   - **Module**: `_ensure_rgb()`
+
+5. **Small Image Upscaling**
+   - Triggers if any dimension < 300px
+   - Calculates scale factor to reach 300px minimum
+   - Upscales using LANCZOS resampling
+   - Improves OCR accuracy for small text
+   - **Module**: `_upscale_small_image()`
+
+6. **Contrast Enhancement**
+   - Increases contrast by 1.3× (configurable)
+   - Uses `ImageEnhance.Contrast`
    - Improves text-background separation
-8. **Sharpness Enhancement**:
-   - Increases sharpness by 1.2× using `ImageEnhance.Sharpness`
-   - Enhances edge definition for better character recognition
-9. **Adaptive Padding Addition**:
-   - Adds 50px padding around image
-   - Calculates average brightness to determine padding color
-   - Background color: black (if avg brightness < 128) or white (if bright)
+   - **Module**: `_enhance_contrast()`
+
+7. **Sharpness Enhancement**
+   - Increases sharpness by 1.2× (configurable)
+   - Uses `ImageEnhance.Sharpness`
+   - Enhances edge definition
+   - **Module**: `_enhance_sharpness()`
+
+8. **Adaptive Padding**
+   - Adds 50px padding (configurable) around image
+   - Analyzes average brightness to determine color
+   - White padding for bright images (>128), black for dark
    - Helps OCR detect edge characters
-10. **Array Conversion & Validation**: 
+   - **Module**: `_add_adaptive_padding()`
+
+#### **Optional Enhancement Steps (OPTIONAL - Fail gracefully)**
+
+These steps enhance OCR quality but will only log warnings if they fail:
+
+9. **Noise Reduction** (Bilateral Filter)
+   - **Enabled by default** in production
+   - Applies bilateral filter (preserves edges while reducing noise)
+   - Parameters: d=9, sigmaColor=75, sigmaSpace=75
+   - Recommended for: scanned/photographed documents
+   - **Module**: `_apply_noise_reduction()`
+   - **Requires**: opencv-python
+
+10. **Binarization** (Adaptive Thresholding)
+    - **Disabled by default** (can cause issues with some images)
+    - Converts to black/white using adaptive thresholding
+    - Block size: 11, constant: 2
+    - Recommended for: high-contrast handwriting
+    - **Module**: `_apply_binarization()`
+    - **Requires**: opencv-python
+
+11. **Deskewing** (Tilt Correction)
+    - **Enabled by default** in production
+    - Detects text rotation using Hough line transform
+    - Corrects angles between -45° and +45°
+    - Recommended for: rotated documents
+    - **Module**: `_apply_deskew()`
+    - **Requires**: opencv-python
+
+12. **Brightness Normalization** (CLAHE)
+    - **Enabled by default** in production
+    - Applies Contrast Limited Adaptive Histogram Equalization
+    - Clip limit: 2.0, tile grid: 8×8
+    - Recommended for: unevenly lit images
+    - **Module**: `_apply_brightness_normalization()`
+    - **Requires**: opencv-python
+
+13. **Array Conversion & Validation**
     - Converts PIL Image to NumPy array (uint8 format)
-    - Validates and clips values to [0, 255] range
+    - Validates dtype and shape
+    - Clips values to [0, 255] range
     - Returns both NumPy array (for OCR) and PIL Image (for metadata)
 
-**Output**: Preprocessed NumPy array ready for OCR engines
+#### **Configuration**
+
+The preprocessing system is **fully configurable** via:
+
+1. **Function Parameters** (runtime):
+   ```python
+   preprocess_image(
+       img_bytes,
+       apply_noise_reduction=True,
+       apply_binarization=False,
+       apply_deskew=True,
+       apply_brightness_norm=True
+   )
+   ```
+
+2. **Configuration File** (`services/preprocessing/config.py`):
+   - 35+ parameters
+   - Default values for all constants
+
+3. **Environment Variables** (`.env`):
+   - `PREPROCESSING_CONTRAST_FACTOR=1.3`
+   - `PREPROCESSING_SHARPNESS_FACTOR=1.2`
+   - `PREPROCESSING_PADDING_SIZE=50`
+   - See `services/preprocessing/README.md` for complete list
+
+#### **Error Handling Strategy**
+
+- **Core Steps (1-8, 13)**: Raise `HTTPException` on failure (fatal errors)
+- **Optional Steps (9-12)**: Log warnings and continue (graceful degradation)
+- **OpenCV Unavailable**: Optional enhancements automatically disabled
+
+**Output**: 
+- NumPy array (uint8, RGB, [H, W, 3]) ready for OCR engines
+- PIL Image object for metadata/logging
+
+**Module Structure**:
+```
+services/preprocessing/
+├── __init__.py
+├── config.py               # Configuration & env variables
+├── image_preprocessing.py  # Main preprocessing logic
+├── README.md              # Full documentation
+└── tests/
+    ├── test_core_preprocessing.py      # 25 tests
+    ├── test_optional_enhancements.py   # 20 tests
+    └── test_toggle_combinations.py     # 16 permutation tests
+```
+
+**Test Coverage**: 61 unit tests, 100% pass rate
 
 ---
 
