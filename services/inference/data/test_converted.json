@@ -1,0 +1,121 @@
+{
+  "学": {
+    "simplified": "学",
+    "traditional": "學",
+    "pinyin": "xue2",
+    "definitions": [
+      "to learn",
+      "to study",
+      "learning",
+      "science",
+      "-ology"
+    ]
+  },
+  "你": {
+    "simplified": "你",
+    "traditional": "你",
+    "pinyin": "ni3",
+    "definitions": [
+      "you (informal)"
+    ]
+  },
+  "好": {
+    "simplified": "好",
+    "traditional": "好",
+    "pinyin": "hao3",
+    "definitions": [
+      "good",
+      "well",
+      "proper",
+      "good to",
+      "easy to",
+      "very",
+      "so"
+    ]
+  },
+  "我": {
+    "simplified": "我",
+    "traditional": "我",
+    "pinyin": "wo3",
+    "definitions": [
+      "I",
+      "me",
+      "my"
+    ]
+  },
+  "是": {
+    "simplified": "是",
+    "traditional": "是",
+    "pinyin": "shi4",
+    "definitions": [
+      "is",
+      "are",
+      "am",
+      "yes",
+      "to be"
+    ]
+  },
+  "的": {
+    "simplified": "的",
+    "traditional": "的",
+    "pinyin": "de",
+    "definitions": [
+      "of",
+      "~'s (possessive particle)",
+      "really and truly",
+      "aim",
+      "clear"
+    ]
+  },
+  "了": {
+    "simplified": "了",
+    "traditional": "了",
+    "pinyin": "le",
+    "definitions": [
+      "(modal particle intensifying preceding clause)",
+      "(completed action marker)"
+    ]
+  },
+  "在": {
+    "simplified": "在",
+    "traditional": "在",
+    "pinyin": "zai4",
+    "definitions": [
+      "(located) at",
+      "(to be) in",
+      "to exist",
+      "in the middle of doing sth"
+    ]
+  },
+  "人": {
+    "simplified": "人",
+    "traditional": "人",
+    "pinyin": "ren2",
+    "definitions": [
+      "man",
+      "person",
+      "people"
+    ]
+  },
+  "有": {
+    "simplified": "有",
+    "traditional": "有",
+    "pinyin": "you3",
+    "definitions": [
+      "to have",
+      "there is",
+      "there are",
+      "to exist",
+      "to be"
+    ]
+  },
+  "_metadata": {
+    "source": "CC-CEDICT",
+    "source_url": "https://www.mdbg.net/chinese/dictionary?page=cedict",
+    "original_file": "test_cedict.txt",
+    "conversion_date": "2025-12-18T17:40:44.606773",
+    "total_entries": 10,
+    "total_lines_processed": 13,
+    "format_version": "1.0"
+  }
+}

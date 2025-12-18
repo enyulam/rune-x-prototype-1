@@ -11,21 +11,22 @@ An advanced multimodal AI platform for ancient script interpretation, reconstruc
 **Hybrid OCR System**: The platform uses a dual-engine OCR approach combining EasyOCR and PaddleOCR for enhanced accuracy and reliability. Both engines are active and processing images successfully.
 
 **Three-Tier Translation System**: All three translation methods are fully operational and verified:
-- ✅ **Dictionary Translation** (276+ entries) - Active
+- ✅ **Dictionary Translation** (CC-CEDICT: 120,474 entries) - Active
 - ✅ **MarianMT Neural Translation** - Active (with sentencepiece installed)
 - ✅ **Qwen LLM Refinement** - Active
 
 The platform uses a FastAPI backend service with a **hybrid OCR system** that runs both EasyOCR and PaddleOCR in parallel, then fuses their outputs at the character level using a dedicated **OCR Fusion Module**. This approach provides:
 - **Dual OCR Engines**: EasyOCR (Chinese Simplified + English) and PaddleOCR (Chinese) run simultaneously
-- **Modular OCR Fusion**: Production-grade `ocr_fusion.py` module with IoU-based alignment, dictionary-guided tie-breaking, and quality metrics
+- **Modular OCR Fusion**: Production-grade `ocr_fusion.py` module with IoU-based alignment, intelligent tie-breaking, and quality metrics
 - **Character-Level Fusion**: Results from both engines are aligned using greedy IoU matching and fused, preserving all character candidates
-- **Intelligent Tie-Breaking**: Dictionary-guided selection when multiple OCR engines produce equal confidence results
+- **Intelligent Tie-Breaking**: CC-CEDICT dictionary (120,474 entries) resolves confidence ties by preferring valid dictionary entries
+- **Optimized Preprocessing**: Minimal preprocessing optimized for handwritten text (aggressive steps like noise reduction disabled to preserve character integrity)
 - **Quality Metrics**: Real-time confidence scores and translation coverage percentages
 - **Enhanced Accuracy**: Multiple hypotheses per character position improve recognition of difficult or stylized text
 - **Comprehensive Testing**: 30 unit tests ensuring fusion reliability (100% pass rate)
 - **Modular Image Preprocessing**: Production-grade 13-step preprocessing pipeline with two-tier architecture (8 core + 4 optional + validation), fully configurable via environment variables, comprehensively tested with 61 unit tests
 - **Three-Tier Translation System**: 
-  - **Dictionary-Based Translation**: Custom Chinese character dictionary with 276+ entries (character-level meanings)
+  - **Dictionary-Based Translation**: CC-CEDICT comprehensive dictionary with 120,474 entries for character-level meanings, traditional/simplified forms, pinyin, and multiple definitions
   - **Neural Sentence Translation**: MarianMT model for context-aware, natural English sentence translation
   - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
 

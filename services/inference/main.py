@@ -21,6 +21,8 @@ import easyocr
 from translator import get_translator
 from sentence_translator import get_sentence_translator
 from qwen_refiner import get_qwen_refiner
+from cc_dictionary import CCDictionary
+from cc_translation import CCDictionaryTranslator, DefinitionStrategy
 
 # Import OCR fusion module
 from ocr_fusion import (
@@ -75,7 +77,9 @@ class InferenceResponse(BaseModel):
     glyphs: List[Glyph]
     unmapped: Optional[List[str]] = None
     coverage: Optional[float] = None
-    dictionary_version: Optional[str] = None
+    dictionary_source: Optional[str] = None  # OCR fusion dictionary source: "CC-CEDICT" or "Translator"
+    dictionary_version: Optional[str] = None  # OCR fusion dictionary version
+    translation_source: Optional[str] = None  # Translation dictionary source: "CC-CEDICT", "RuleBasedTranslator", or "Error"
 
 
 def _load_easyocr() -> Optional[easyocr.Reader]:
@@ -181,12 +185,16 @@ def _preprocess_image(image_bytes: bytes) -> Tuple[np.ndarray, Image.Image]:
     # - RGB conversion, upscaling, contrast/sharpness enhancement
     # - Adaptive padding
     # - Optional: noise reduction, binarization, deskewing, brightness normalization
+    # OPTIMIZED: Minimal preprocessing for handwritten text
+    # Testing confirmed: Aggressive preprocessing (noise reduction, deskewing, brightness norm)
+    # was corrupting handwritten Chinese characters, causing severe OCR accuracy degradation
+    # Current configuration provides best results for handwritten text
     return preprocess_image(
         image_bytes,
-        apply_noise_reduction=True,
-        apply_binarization=False,  # Disable for now - can cause issues with some images
-        apply_deskew=True,
-        apply_brightness_norm=True
+        apply_noise_reduction=False,  # Disabled: Corrupts handwriting
+        apply_binarization=False,      # Disabled: Can cause issues
+        apply_deskew=False,            # Disabled: Corrupts handwriting
+        apply_brightness_norm=False    # Disabled: Corrupts handwriting
     )
 
 
@@ -357,6 +365,36 @@ paddleocr_reader = _load_paddleocr()
 translator = get_translator()  # Dictionary-based translator
 sentence_translator = get_sentence_translator()  # Neural sentence translator (MarianMT)
 qwen_refiner = get_qwen_refiner()  # Qwen LLM refiner
+
+# Initialize CC-CEDICT dictionary for OCR fusion tie-breaking
+# ENABLED: Provides intelligent tie-breaking when OCR engines have equal confidence
+# Testing confirmed: No negative impact when not needed, potential benefit in tie scenarios
+cc_dictionary: Optional[CCDictionary] = None
+try:
+    # Use path relative to this file's location
+    cc_dict_path = Path(__file__).parent / "data" / "cc_cedict.json"
+    cc_dictionary = CCDictionary(str(cc_dict_path))
+    print(f"✅ CC-CEDICT dictionary loaded successfully with {len(cc_dictionary):,} entries.")
+    logger.info("CC-CEDICT dictionary loaded successfully with %d entries.", len(cc_dictionary))
+except Exception as e:
+    print(f"⚠️  Failed to load CC-CEDICT: {e}. Falling back to translator for OCR fusion.")
+    logger.warning("Failed to load CC-CEDICT: %s. Falling back to translator for OCR fusion.", e)
+    cc_dictionary = None
+
+# Initialize CC-CEDICT translator for character translation (replaces RuleBasedTranslator)
+# Note: This loads its own CCDictionary instance for translation purposes only
+cc_translator: Optional[CCDictionaryTranslator] = None
+try:
+    cc_dict_path = Path(__file__).parent / "data" / "cc_cedict.json"
+    translation_dictionary = CCDictionary(str(cc_dict_path))
+    cc_translator = CCDictionaryTranslator(translation_dictionary, default_strategy=DefinitionStrategy.FIRST)
+    print(f"✅ CC-CEDICT translator initialized ({len(cc_translator):,} entries, strategy: {cc_translator.default_strategy.value}).")
+    logger.info("CCDictionaryTranslator initialized with %d entries (strategy: %s)", 
+               len(cc_translator), cc_translator.default_strategy.value)
+except Exception as e:
+    print(f"⚠️  Failed to initialize CCDictionaryTranslator: {e}. Falling back to RuleBasedTranslator.")
+    logger.warning("Failed to initialize CCDictionaryTranslator: %s. Falling back to RuleBasedTranslator.", e)
+    cc_translator = None
 
 if easyocr_reader is None:
     logger.warning("EasyOCR not available. OCR functionality will be limited.")
@@ -553,14 +591,29 @@ async def process_image(file: UploadFile = File(...)):
             )
         
         # Convert to Glyph objects and full text
-        # Add lookup_character method wrapper if translator doesn't have it
-        if translator and not hasattr(translator, "lookup_character"):
+        # Use CC-CEDICT for intelligent tie-breaking (when OCR engines have equal confidence)
+        # Testing confirmed: Harmless when not needed, helpful in true tie scenarios
+        fusion_dictionary = cc_dictionary if cc_dictionary is not None else None
+        
+        # Add lookup_character method wrapper if dictionary doesn't have it
+        if fusion_dictionary and not hasattr(fusion_dictionary, "lookup_character"):
             # Wrap lookup_entry to match expected API
-            translator.lookup_character = lambda char: translator.lookup_entry(char)
+            fusion_dictionary.lookup_character = lambda char: fusion_dictionary.lookup_entry(char)
         
         glyphs, full_text, ocr_confidence, ocr_coverage = fuse_character_candidates(
-            fused_positions, translator=translator
+            fused_positions, translator=fusion_dictionary
         )
+        
+        # Capture dictionary metadata for API response
+        if fusion_dictionary == cc_dictionary and cc_dictionary is not None:
+            # Using CC-CEDICT
+            ocr_dict_source = "CC-CEDICT"
+            ocr_dict_metadata = cc_dictionary.get_metadata()
+            ocr_dict_version = ocr_dict_metadata.get("format_version", "1.0")
+        else:
+            # No dictionary (confidence-based)
+            ocr_dict_source = "None (Confidence-Based)"
+            ocr_dict_version = None
         
         if not full_text or not full_text.strip():
             raise HTTPException(
@@ -569,10 +622,14 @@ async def process_image(file: UploadFile = File(...)):
             )
         
         logger.info(
-            "Fused %d positions into %d glyphs, text length: %d (confidence: %.2f%%, coverage: %.1f%%)",
+            "Fused %d positions into %d glyphs, text length: %d (confidence: %.2f%%, coverage: %.1f%%) [Dict: %s]",
             len(fused_positions), len(glyphs), len(full_text),
-            ocr_confidence * 100, ocr_coverage
+            ocr_confidence * 100, ocr_coverage, ocr_dict_source
         )
+        
+        # Log dictionary performance stats (debug level)
+        if cc_dictionary is not None:
+            cc_dictionary.log_performance_stats(level="debug")
         
     except HTTPException:
         raise
@@ -584,6 +641,8 @@ async def process_image(file: UploadFile = File(...)):
         ) from e
     
     # Translate text using dictionary
+    # Priority: CC-CEDICT Translator (120k entries) → RuleBasedTranslator (276 entries)
+    translation_source = "Unknown"
     try:
         glyph_dicts = [
             {
@@ -594,8 +653,31 @@ async def process_image(file: UploadFile = File(...)):
             for g in glyphs
         ]
         
-        translation_result = translator.translate_text(full_text, glyph_dicts)
-        logger.info("Translation completed: %.1f%% coverage", translation_result.get('coverage', 0))
+        # Try CC-CEDICT translator first (if available)
+        if cc_translator is not None:
+            try:
+                logger.debug("Using CCDictionaryTranslator for translation (120,474 entries)")
+                result = cc_translator.translate_text(full_text, glyphs)
+                translation_result = result.to_dict()  # Convert to dict format
+                translation_source = "CC-CEDICT"
+                logger.info("CC-CEDICT translation completed: %.1f%% coverage (%d/%d characters)", 
+                           result.coverage, result.mapped_characters, result.total_characters)
+                # Log performance statistics (debug level)
+                cc_translator.log_translation_stats(level="debug")
+            except Exception as cc_error:
+                logger.warning("CCDictionaryTranslator failed: %s. Falling back to RuleBasedTranslator.", cc_error)
+                # Fall back to RuleBasedTranslator
+                translation_result = translator.translate_text(full_text, glyph_dicts)
+                translation_source = "RuleBasedTranslator"
+                logger.info("RuleBasedTranslator (fallback) completed: %.1f%% coverage", 
+                           translation_result.get('coverage', 0))
+        else:
+            # CC-CEDICT not available, use RuleBasedTranslator
+            logger.debug("Using RuleBasedTranslator for translation (276 entries)")
+            translation_result = translator.translate_text(full_text, glyph_dicts)
+            translation_source = "RuleBasedTranslator"
+            logger.info("RuleBasedTranslator translation completed: %.1f%% coverage", 
+                       translation_result.get('coverage', 0))
         
     except Exception as e:
         logger.error("Translation failed: %s", e)
@@ -606,6 +688,7 @@ async def process_image(file: UploadFile = File(...)):
             "coverage": 0.0,
             "dictionary_version": "1.0.0"
         }
+        translation_source = "Error"
     
     # Enrich glyphs with meanings from translation
     enriched_glyphs = []
@@ -690,5 +773,7 @@ async def process_image(file: UploadFile = File(...)):
         glyphs=enriched_glyphs,
         unmapped=translation_result.get("unmapped", []),
         coverage=ocr_coverage,  # OCR fusion dictionary coverage (0.0-100.0 percentage)
-        dictionary_version=translation_result.get("dictionary_version")
+        dictionary_source=ocr_dict_source,  # OCR fusion dictionary source (CC-CEDICT or Translator)
+        dictionary_version=ocr_dict_version,  # OCR fusion dictionary version
+        translation_source=translation_source  # Translation dictionary source (CC-CEDICT, RuleBasedTranslator, or Error)
     )

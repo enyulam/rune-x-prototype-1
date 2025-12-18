@@ -5,9 +5,9 @@
 **Good News**: Yes, you can run the program and upload an image to extract text and get translations! All systems are verified and working.
 
 **Verified Operational (December 2025)**:
-- ✅ **Hybrid OCR System** - EasyOCR + PaddleOCR running in parallel with modular OCR fusion (dictionary-guided tie-breaking, quality metrics, 30 unit tests)
+- ✅ **Hybrid OCR System** - EasyOCR + PaddleOCR running in parallel with modular OCR fusion (confidence-based selection, quality metrics, 30 unit tests)
 - ✅ **Three-Tier Translation** - All three translation methods fully operational:
-  - ✅ Dictionary (276+ entries) - Active
+  - ✅ CC-CEDICT Dictionary (120,474 entries) - Active for translation
   - ✅ MarianMT neural translation - Active (sentencepiece installed)
   - ✅ Qwen LLM refinement - Active
 - ✅ **Modular Preprocessing** - 13-step production-grade pipeline with 61 unit tests (100% pass rate)
