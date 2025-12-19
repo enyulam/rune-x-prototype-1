@@ -1,0 +1,593 @@
+{
+  "_metadata": {
+    "source": "CC-CEDICT Demo",
+    "description": "100 common Chinese characters for testing",
+    "conversion_date": "2025-12-18T00:00:00",
+    "total_entries": 100,
+    "format_version": "1.0",
+    "note": "This is a demo dictionary. Download full CC-CEDICT for production use."
+  },
+  "学": {
+    "simplified": "学",
+    "traditional": "學",
+    "pinyin": "xue2",
+    "definitions": ["to learn", "to study", "learning", "science", "-ology"]
+  },
+  "你": {
+    "simplified": "你",
+    "traditional": "你",
+    "pinyin": "ni3",
+    "definitions": ["you (informal)"]
+  },
+  "好": {
+    "simplified": "好",
+    "traditional": "好",
+    "pinyin": "hao3",
+    "definitions": ["good", "well", "proper", "good to", "easy to", "very", "so"]
+  },
+  "我": {
+    "simplified": "我",
+    "traditional": "我",
+    "pinyin": "wo3",
+    "definitions": ["I", "me", "my"]
+  },
+  "是": {
+    "simplified": "是",
+    "traditional": "是",
+    "pinyin": "shi4",
+    "definitions": ["is", "are", "am", "yes", "to be"]
+  },
+  "的": {
+    "simplified": "的",
+    "traditional": "的",
+    "pinyin": "de",
+    "definitions": ["of", "~'s (possessive particle)", "really and truly", "aim", "clear"]
+  },
+  "了": {
+    "simplified": "了",
+    "traditional": "了",
+    "pinyin": "le",
+    "definitions": ["(modal particle intensifying preceding clause)", "(completed action marker)"]
+  },
+  "在": {
+    "simplified": "在",
+    "traditional": "在",
+    "pinyin": "zai4",
+    "definitions": ["(located) at", "(to be) in", "to exist", "in the middle of doing sth"]
+  },
+  "人": {
+    "simplified": "人",
+    "traditional": "人",
+    "pinyin": "ren2",
+    "definitions": ["man", "person", "people"]
+  },
+  "有": {
+    "simplified": "有",
+    "traditional": "有",
+    "pinyin": "you3",
+    "definitions": ["to have", "there is", "there are", "to exist", "to be"]
+  },
+  "中": {
+    "simplified": "中",
+    "traditional": "中",
+    "pinyin": "zhong1",
+    "definitions": ["middle", "center", "within", "among", "in", "while (doing sth)"]
+  },
+  "国": {
+    "simplified": "国",
+    "traditional": "國",
+    "pinyin": "guo2",
+    "definitions": ["country", "nation", "state", "national"]
+  },
+  "大": {
+    "simplified": "大",
+    "traditional": "大",
+    "pinyin": "da4",
+    "definitions": ["big", "huge", "large", "major", "great", "wide", "deep", "older"]
+  },
+  "不": {
+    "simplified": "不",
+    "traditional": "不",
+    "pinyin": "bu4",
+    "definitions": ["no", "not", "un-"]
+  },
+  "一": {
+    "simplified": "一",
+    "traditional": "一",
+    "pinyin": "yi1",
+    "definitions": ["one", "1", "single", "a (article)", "as soon as", "entire", "whole"]
+  },
+  "他": {
+    "simplified": "他",
+    "traditional": "他",
+    "pinyin": "ta1",
+    "definitions": ["he or him", "(used for either sex when the sex is unknown or unimportant)"]
+  },
+  "来": {
+    "simplified": "来",
+    "traditional": "來",
+    "pinyin": "lai2",
+    "definitions": ["to come", "to arrive", "to come round", "ever since", "next"]
+  },
+  "上": {
+    "simplified": "上",
+    "traditional": "上",
+    "pinyin": "shang4",
+    "definitions": ["on top", "upon", "above", "upper", "previous", "first (of multiple parts)"]
+  },
+  "个": {
+    "simplified": "个",
+    "traditional": "個",
+    "pinyin": "ge4",
+    "definitions": ["individual", "this", "that", "size", "classifier for people or objects"]
+  },
+  "和": {
+    "simplified": "和",
+    "traditional": "和",
+    "pinyin": "he2",
+    "definitions": ["and", "together with", "with", "sum", "union", "peace", "harmony"]
+  },
+  "们": {
+    "simplified": "们",
+    "traditional": "們",
+    "pinyin": "men",
+    "definitions": ["plural marker for pronouns, and nouns referring to individuals"]
+  },
+  "到": {
+    "simplified": "到",
+    "traditional": "到",
+    "pinyin": "dao4",
+    "definitions": ["to (a place)", "until (a time)", "up to", "to go", "to arrive"]
+  },
+  "说": {
+    "simplified": "说",
+    "traditional": "說",
+    "pinyin": "shuo1",
+    "definitions": ["to speak", "to say", "to explain", "to scold", "to tell off"]
+  },
+  "时": {
+    "simplified": "时",
+    "traditional": "時",
+    "pinyin": "shi2",
+    "definitions": ["time", "when", "hour", "season", "period"]
+  },
+  "要": {
+    "simplified": "要",
+    "traditional": "要",
+    "pinyin": "yao4",
+    "definitions": ["to want", "to need", "will", "shall", "important", "essential"]
+  },
+  "她": {
+    "simplified": "她",
+    "traditional": "她",
+    "pinyin": "ta1",
+    "definitions": ["she"]
+  },
+  "去": {
+    "simplified": "去",
+    "traditional": "去",
+    "pinyin": "qu4",
+    "definitions": ["to go", "to go to (a place)", "to cause to go or send (sb)"]
+  },
+  "就": {
+    "simplified": "就",
+    "traditional": "就",
+    "pinyin": "jiu4",
+    "definitions": ["at once", "right away", "only", "just (emphasis)", "as early as"]
+  },
+  "出": {
+    "simplified": "出",
+    "traditional": "出",
+    "pinyin": "chu1",
+    "definitions": ["to go out", "to come out", "to occur", "to produce", "to go beyond"]
+  },
+  "可": {
+    "simplified": "可",
+    "traditional": "可",
+    "pinyin": "ke3",
+    "definitions": ["can", "may", "able to", "certain(ly)", "to suit"]
+  },
+  "以": {
+    "simplified": "以",
+    "traditional": "以",
+    "pinyin": "yi3",
+    "definitions": ["to use", "by means of", "according to", "in order to", "because of"]
+  },
+  "也": {
+    "simplified": "也",
+    "traditional": "也",
+    "pinyin": "ye3",
+    "definitions": ["also", "too", "(in classical Chinese) final particle implying affirmation"]
+  },
+  "得": {
+    "simplified": "得",
+    "traditional": "得",
+    "pinyin": "de2",
+    "definitions": ["to get", "to obtain", "to gain", "to catch (a disease)", "proper", "suitable"]
+  },
+  "起": {
+    "simplified": "起",
+    "traditional": "起",
+    "pinyin": "qi3",
+    "definitions": ["to rise", "to raise", "to get up", "to set out", "to start"]
+  },
+  "还": {
+    "simplified": "还",
+    "traditional": "還",
+    "pinyin": "hai2",
+    "definitions": ["still", "still in progress", "still more", "yet", "even more", "also"]
+  },
+  "看": {
+    "simplified": "看",
+    "traditional": "看",
+    "pinyin": "kan4",
+    "definitions": ["to see", "to look at", "to read", "to watch", "to visit", "to call on"]
+  },
+  "能": {
+    "simplified": "能",
+    "traditional": "能",
+    "pinyin": "neng2",
+    "definitions": ["to be able to", "can", "capable", "energy", "ability"]
+  },
+  "这": {
+    "simplified": "这",
+    "traditional": "這",
+    "pinyin": "zhe4",
+    "definitions": ["this", "these", "(commonly pronounced zhei4 before a classifier)"]
+  },
+  "那": {
+    "simplified": "那",
+    "traditional": "那",
+    "pinyin": "na4",
+    "definitions": ["that", "those", "then (in that case)", "(commonly pronounced nei4 before a classifier)"]
+  },
+  "前": {
+    "simplified": "前",
+    "traditional": "前",
+    "pinyin": "qian2",
+    "definitions": ["front", "forward", "ahead", "first", "former", "in advance", "ago", "before"]
+  },
+  "后": {
+    "simplified": "后",
+    "traditional": "後",
+    "pinyin": "hou4",
+    "definitions": ["back", "behind", "rear", "afterwards", "after", "later"]
+  },
+  "天": {
+    "simplified": "天",
+    "traditional": "天",
+    "pinyin": "tian1",
+    "definitions": ["day", "sky", "heaven", "nature", "weather", "god"]
+  },
+  "年": {
+    "simplified": "年",
+    "traditional": "年",
+    "pinyin": "nian2",
+    "definitions": ["year", "period of time in one's life", "New Year"]
+  },
+  "月": {
+    "simplified": "月",
+    "traditional": "月",
+    "pinyin": "yue4",
+    "definitions": ["moon", "month"]
+  },
+  "日": {
+    "simplified": "日",
+    "traditional": "日",
+    "pinyin": "ri4",
+    "definitions": ["sun", "day", "date", "day of the month", "Japan (abbr.)"]
+  },
+  "今": {
+    "simplified": "今",
+    "traditional": "今",
+    "pinyin": "jin1",
+    "definitions": ["now", "the present", "current", "this", "today"]
+  },
+  "明": {
+    "simplified": "明",
+    "traditional": "明",
+    "pinyin": "ming2",
+    "definitions": ["bright", "clear", "to understand", "next", "open", "wise"]
+  },
+  "生": {
+    "simplified": "生",
+    "traditional": "生",
+    "pinyin": "sheng1",
+    "definitions": ["to be born", "to give birth", "life", "to grow", "raw", "unripe"]
+  },
+  "会": {
+    "simplified": "会",
+    "traditional": "會",
+    "pinyin": "hui4",
+    "definitions": ["can", "to be able to", "to know how to", "will", "meeting", "to meet"]
+  },
+  "小": {
+    "simplified": "小",
+    "traditional": "小",
+    "pinyin": "xiao3",
+    "definitions": ["small", "tiny", "few", "young", "petty", "little"]
+  },
+  "老": {
+    "simplified": "老",
+    "traditional": "老",
+    "pinyin": "lao3",
+    "definitions": ["old (of people)", "venerable (person)", "experienced", "of long standing"]
+  },
+  "多": {
+    "simplified": "多",
+    "traditional": "多",
+    "pinyin": "duo1",
+    "definitions": ["many", "much", "a lot of", "numerous", "more", "in excess", "how (to what extent)"]
+  },
+  "少": {
+    "simplified": "少",
+    "traditional": "少",
+    "pinyin": "shao3",
+    "definitions": ["few", "less", "to lack", "to be missing", "to stop (doing sth)"]
+  },
+  "高": {
+    "simplified": "高",
+    "traditional": "高",
+    "pinyin": "gao1",
+    "definitions": ["high", "tall", "above average", "loud", "your (honorific)"]
+  },
+  "长": {
+    "simplified": "长",
+    "traditional": "長",
+    "pinyin": "chang2",
+    "definitions": ["long", "length", "forever", "always", "constantly", "chief", "head", "elder"]
+  },
+  "新": {
+    "simplified": "新",
+    "traditional": "新",
+    "pinyin": "xin1",
+    "definitions": ["new", "newly", "meso- (chemistry)"]
+  },
+  "开": {
+    "simplified": "开",
+    "traditional": "開",
+    "pinyin": "kai1",
+    "definitions": ["to open", "to start", "to turn on", "to write out (a prescription, check, etc.)"]
+  },
+  "知": {
+    "simplified": "知",
+    "traditional": "知",
+    "pinyin": "zhi1",
+    "definitions": ["to know", "to be aware"]
+  },
+  "道": {
+    "simplified": "道",
+    "traditional": "道",
+    "pinyin": "dao4",
+    "definitions": ["road", "path", "way", "principle", "doctrine", "Taoism", "to say", "to speak"]
+  },
+  "爱": {
+    "simplified": "爱",
+    "traditional": "愛",
+    "pinyin": "ai4",
+    "definitions": ["to love", "to be fond of", "to like", "affection", "to be prone to"]
+  },
+  "文": {
+    "simplified": "文",
+    "traditional": "文",
+    "pinyin": "wen2",
+    "definitions": ["language", "culture", "writing", "formal", "literary", "gentle"]
+  },
+  "字": {
+    "simplified": "字",
+    "traditional": "字",
+    "pinyin": "zi4",
+    "definitions": ["letter", "symbol", "character", "word"]
+  },
+  "书": {
+    "simplified": "书",
+    "traditional": "書",
+    "pinyin": "shu1",
+    "definitions": ["book", "letter", "document", "to write"]
+  },
+  "读": {
+    "simplified": "读",
+    "traditional": "讀",
+    "pinyin": "du2",
+    "definitions": ["to read", "to study", "reading of word (pronunciation)"]
+  },
+  "写": {
+    "simplified": "写",
+    "traditional": "寫",
+    "pinyin": "xie3",
+    "definitions": ["to write"]
+  },
+  "听": {
+    "simplified": "听",
+    "traditional": "聽",
+    "pinyin": "ting1",
+    "definitions": ["to listen", "to hear", "to obey", "a can (loanword)"]
+  },
+  "话": {
+    "simplified": "话",
+    "traditional": "話",
+    "pinyin": "hua4",
+    "definitions": ["dialect", "language", "spoken words", "speech", "talk", "words", "conversation"]
+  },
+  "语": {
+    "simplified": "语",
+    "traditional": "語",
+    "pinyin": "yu3",
+    "definitions": ["language", "culture", "writing", "formal", "literary", "gentle"]
+  },
+  "手": {
+    "simplified": "手",
+    "traditional": "手",
+    "pinyin": "shou3",
+    "definitions": ["hand", "(formal) to hold", "person engaged in certain types of work", "person skilled in certain types of work"]
+  },
+  "心": {
+    "simplified": "心",
+    "traditional": "心",
+    "pinyin": "xin1",
+    "definitions": ["heart", "mind", "intention", "center", "core"]
+  },
+  "山": {
+    "simplified": "山",
+    "traditional": "山",
+    "pinyin": "shan1",
+    "definitions": ["mountain", "hill", "anything resembling a mountain"]
+  },
+  "水": {
+    "simplified": "水",
+    "traditional": "水",
+    "pinyin": "shui3",
+    "definitions": ["water", "river", "liquid", "beverage", "additional charges or income"]
+  },
+  "火": {
+    "simplified": "火",
+    "traditional": "火",
+    "pinyin": "huo3",
+    "definitions": ["fire", "urgent", "ammunition", "fiery or flaming", "internal heat (Chinese medicine)", "anger"]
+  },
+  "木": {
+    "simplified": "木",
+    "traditional": "木",
+    "pinyin": "mu4",
+    "definitions": ["tree", "wood", "timber", "wooden", "simple", "numb"]
+  },
+  "金": {
+    "simplified": "金",
+    "traditional": "金",
+    "pinyin": "jin1",
+    "definitions": ["gold", "metal", "money", "golden", "highly valuable", "one of the eight categories of ancient musical instruments"]
+  },
+  "土": {
+    "simplified": "土",
+    "traditional": "土",
+    "pinyin": "tu3",
+    "definitions": ["earth", "soil", "dust", "clay", "local", "indigenous", "crude opium", "unsophisticated"]
+  },
+  "工": {
+    "simplified": "工",
+    "traditional": "工",
+    "pinyin": "gong1",
+    "definitions": ["work", "worker", "skill", "profession", "trade", "craft", "labor"]
+  },
+  "作": {
+    "simplified": "作",
+    "traditional": "作",
+    "pinyin": "zuo4",
+    "definitions": ["to do", "to make", "to produce", "to write", "to compose", "to act as", "to engage in"]
+  },
+  "用": {
+    "simplified": "用",
+    "traditional": "用",
+    "pinyin": "yong4",
+    "definitions": ["to use", "to employ", "to have to", "to eat or drink", "expense or outlay", "usefulness"]
+  },
+  "家": {
+    "simplified": "家",
+    "traditional": "家",
+    "pinyin": "jia1",
+    "definitions": ["home", "family", "domestic", "classifier for families or businesses", "specialist"]
+  },
+  "学校": {
+    "simplified": "学校",
+    "traditional": "學校",
+    "pinyin": "xue2 xiao4",
+    "definitions": ["school"]
+  },
+  "老师": {
+    "simplified": "老师",
+    "traditional": "老師",
+    "pinyin": "lao3 shi1",
+    "definitions": ["teacher"]
+  },
+  "学生": {
+    "simplified": "学生",
+    "traditional": "學生",
+    "pinyin": "xue2 sheng1",
+    "definitions": ["student", "schoolchild"]
+  },
+  "朋友": {
+    "simplified": "朋友",
+    "traditional": "朋友",
+    "pinyin": "peng2 you3",
+    "definitions": ["friend"]
+  },
+  "东西": {
+    "simplified": "东西",
+    "traditional": "東西",
+    "pinyin": "dong1 xi1",
+    "definitions": ["thing", "stuff", "creature", "CL:個|个[ge4],件[jian4]"]
+  },
+  "先生": {
+    "simplified": "先生",
+    "traditional": "先生",
+    "pinyin": "xian1 sheng",
+    "definitions": ["teacher", "husband", "doctor (trad.)", "CL:位[wei4]"]
+  },
+  "女士": {
+    "simplified": "女士",
+    "traditional": "女士",
+    "pinyin": "nu:3 shi4",
+    "definitions": ["lady", "madam", "CL:個|个[ge4],位[wei4]", "Miss", "Ms"]
+  },
+  "时候": {
+    "simplified": "时候",
+    "traditional": "時候",
+    "pinyin": "shi2 hou",
+    "definitions": ["time", "length of time", "moment", "period"]
+  },
+  "地方": {
+    "simplified": "地方",
+    "traditional": "地方",
+    "pinyin": "di4 fang",
+    "definitions": ["area", "place", "space", "room", "territory", "CL:處|处[chu4],個|个[ge4],塊|块[kuai4]"]
+  },
+  "问题": {
+    "simplified": "问题",
+    "traditional": "問題",
+    "pinyin": "wen4 ti2",
+    "definitions": ["question", "problem", "issue", "topic", "CL:個|个[ge4]"]
+  },
+  "意思": {
+    "simplified": "意思",
+    "traditional": "意思",
+    "pinyin": "yi4 si",
+    "definitions": ["meaning", "thought", "idea", "opinion", "interest", "fun", "token of appreciation"]
+  },
+  "谢谢": {
+    "simplified": "谢谢",
+    "traditional": "謝謝",
+    "pinyin": "xie4 xie",
+    "definitions": ["to thank", "thanks", "thank you"]
+  },
+  "再见": {
+    "simplified": "再见",
+    "traditional": "再見",
+    "pinyin": "zai4 jian4",
+    "definitions": ["goodbye", "see you again later"]
+  },
+  "对不起": {
+    "simplified": "对不起",
+    "traditional": "對不起",
+    "pinyin": "dui4 bu5 qi3",
+    "definitions": ["I'm sorry", "excuse me", "to let sb down", "to be unworthy"]
+  },
+  "没关系": {
+    "simplified": "没关系",
+    "traditional": "沒關係",
+    "pinyin": "mei2 guan1 xi5",
+    "definitions": ["it doesn't matter", "never mind", "it's nothing", "no problem"]
+  },
+  "不客气": {
+    "simplified": "不客气",
+    "traditional": "不客氣",
+    "pinyin": "bu2 ke4 qi",
+    "definitions": ["you're welcome", "don't mention it", "impolite", "rude", "blunt"]
+  },
+  "对": {
+    "simplified": "对",
+    "traditional": "對",
+    "pinyin": "dui4",
+    "definitions": ["correct", "right", "towards", "at", "for", "concerning", "regarding", "to treat (sb a certain way)", "to face", "opposite", "versus", "to match", "to adjust", "to fit", "to suit", "to answer", "to reply", "to add", "to pour in"]
+  }
+}
+

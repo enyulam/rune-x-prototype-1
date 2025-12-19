@@ -1,0 +1,13 @@
+# CC-CEDICT Test File
+# Test file with a few entries to verify conversion
+學 学 [xue2] /to learn/to study/learning/science/-ology/
+你 你 [ni3] /you (informal)/
+好 好 [hao3] /good/well/proper/good to/easy to/very/so/
+我 我 [wo3] /I/me/my/
+是 是 [shi4] /is/are/am/yes/to be/
+的 的 [de] /of/~'s (possessive particle)/really and truly/aim/clear/
+了 了 [le] /(modal particle intensifying preceding clause)/(completed action marker)/
+在 在 [zai4] /(located) at/(to be) in/to exist/in the middle of doing sth/
+人 人 [ren2] /man/person/people/
+有 有 [you3] /to have/there is/there are/to exist/to be/
+

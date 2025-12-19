@@ -10,18 +10,20 @@ FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier t
 - ✅ **PaddleOCR**: Ready
 - ✅ **MarianMT**: Ready (with sentencepiece)
 - ✅ **Qwen Refiner**: Ready
-- ✅ **Dictionary**: 276+ entries loaded
+- ✅ **CC-CEDICT Dictionary**: 120,474 entries loaded
 - ✅ **Preprocessing**: All 61 tests passing
 
 ## Features
 
-- **Hybrid OCR System**: Runs EasyOCR and PaddleOCR in parallel, then fuses results at character level
-- **Character-Level Fusion**: Preserves all character hypotheses from both engines using IoU-based alignment
+- **Hybrid OCR System**: Runs EasyOCR and PaddleOCR in parallel, then fuses results at character level using dedicated `ocr_fusion.py` module
+- **OCR Fusion Module**: Production-grade fusion with CC-CEDICT intelligent tie-breaking (120,474 entries), quality metrics, and comprehensive logging (30 tests, 100% pass rate)
+- **Character-Level Fusion**: Preserves all character hypotheses from both engines using greedy IoU-based alignment with reading order preservation
+- **Optimized Preprocessing**: Minimal preprocessing for handwritten text (aggressive steps disabled to preserve character integrity)
 - **Three-Tier Translation System**: 
-  - **Dictionary-Based Translation**: Character-level meanings from custom dictionary (276+ entries)
+  - **Dictionary-Based Translation**: Character-level meanings from CC-CEDICT (120,474 entries with traditional/simplified forms, pinyin, and multiple definitions)
   - **Neural Sentence Translation**: Context-aware sentence-level translation using MarianMT (Helsinki-NLP/opus-mt-zh-en)
   - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
-- **Dictionary**: JSON-based character dictionary with 276+ entries (meanings, alternatives, notes)
+- **CC-CEDICT Dictionary**: Comprehensive JSON-based Chinese-English dictionary with 120,474 entries including traditional/simplified forms, pinyin, and multiple English definitions per character
 - **Modular Image Preprocessing**: Production-grade preprocessing system with 13 configurable steps (8 core + 4 optional + validation), fully tested with 61 unit tests (100% pass rate), configurable via environment variables with 35+ tunable parameters
 - **Error Handling**: Comprehensive error messages and validation with graceful fallback
 - **Performance**: Optimized for various image sizes with automatic resizing
@@ -37,6 +39,39 @@ The service implements a dual-engine OCR approach:
 3. **Alignment**: Character positions are aligned using Intersection over Union (IoU) matching
 4. **Fusion**: All character candidates are preserved at each aligned position
 5. **Reading Order**: Final sequence sorted top-to-bottom, left-to-right
+
+### OCR Fusion Module (`ocr_fusion.py`)
+
+**Status**: ✅ Production-Ready (December 2025)
+
+A dedicated, modular system for fusing OCR results from multiple engines with advanced features:
+
+#### **Core Components**:
+- **`calculate_iou()`**: Computes bounding box overlap (Intersection over Union)
+- **`align_ocr_outputs()`**: Aligns characters using greedy IoU matching with reading order preservation
+- **`fuse_character_candidates()`**: Selects best character from aligned candidates with intelligent tie-breaking
+
+#### **Key Features**:
+- ✅ **Intelligent Tie-Breaking**: CC-CEDICT dictionary (120,474 entries) resolves equal confidence scenarios by preferring valid dictionary entries
+- ✅ **Confidence-Based Selection**: Selects highest confidence character when confidence differs clearly
+- ✅ **Quality Metrics**: Computes average OCR confidence and translation coverage percentage
+- ✅ **Production Logging**: 15 strategic log points tracking all fusion decisions
+- ✅ **Comprehensive Testing**: 30 unit tests with 100% pass rate
+- ✅ **Type Safety**: Full Pydantic model validation (NormalizedOCRResult, CharacterCandidate, FusedPosition, Glyph)
+
+#### **Metrics**:
+- **Average Confidence**: Mean OCR confidence across all recognized characters (0.0-1.0)
+- **Translation Coverage**: Percentage of characters with dictionary entries (0.0-100.0%)
+
+#### **Example Log Output**:
+```
+INFO - Starting OCR alignment: 5 EasyOCR results, 5 PaddleOCR results (IoU threshold: 0.30)
+INFO - Alignment summary: 5 total positions (4 aligned, 1 EasyOCR-only, 0 PaddleOCR-only)
+INFO - Starting character fusion: 5 positions, translator: enabled
+INFO - Position 2: Selected '学' from EasyOCR (conf: 0.95 > 0.85)
+INFO - Position 4: Dictionary-guided selection '好' (tie-broken from equal confidence candidates)
+INFO - Fusion complete: 5 glyphs, 5 characters | Tie-breaks: 1 (dictionary-guided: 1) | Avg confidence: 92.40%, Coverage: 80.0%
+```
 
 ### OCR Engines
 

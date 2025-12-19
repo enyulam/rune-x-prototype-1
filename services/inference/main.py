@@ -9,7 +9,6 @@ Run with:
 import io
 import logging
 from typing import List, Optional, Tuple, Dict, Any
-from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
@@ -22,6 +21,19 @@ import easyocr
 from translator import get_translator
 from sentence_translator import get_sentence_translator
 from qwen_refiner import get_qwen_refiner
+from cc_dictionary import CCDictionary
+from cc_translation import CCDictionaryTranslator, DefinitionStrategy
+
+# Import OCR fusion module
+from ocr_fusion import (
+    NormalizedOCRResult,
+    CharacterCandidate,
+    FusedPosition,
+    Glyph,
+    calculate_iou,
+    align_ocr_outputs,
+    fuse_character_candidates
+)
 
 # Import new modular preprocessing system
 import sys
@@ -55,40 +67,6 @@ OCR_TIMEOUT = 30  # seconds
 SUPPORTED_FORMATS = {'image/jpeg', 'image/jpg', 'image/png', 'image/webp'}
 
 
-# Normalized OCR result structure
-@dataclass
-class NormalizedOCRResult:
-    """Normalized OCR result from any engine."""
-    bbox: List[float]  # [x1, y1, x2, y2]
-    char: str
-    confidence: float
-    source: str  # "easyocr" or "paddleocr"
-
-
-# Fused character candidate structure
-@dataclass
-class CharacterCandidate:
-    """Single character candidate from an OCR engine."""
-    char: str
-    confidence: float
-    source: str
-
-
-@dataclass
-class FusedPosition:
-    """Fused character position with multiple candidates."""
-    position: int
-    bbox: List[float]  # [x1, y1, x2, y2]
-    candidates: List[CharacterCandidate]
-
-
-class Glyph(BaseModel):
-    symbol: str
-    bbox: Optional[List[float]] = None  # [x, y, w, h]
-    confidence: float
-    meaning: Optional[str] = None
-
-
 class InferenceResponse(BaseModel):
     text: str
     translation: str  # Dictionary-based character-level translation
@@ -99,7 +77,9 @@ class InferenceResponse(BaseModel):
     glyphs: List[Glyph]
     unmapped: Optional[List[str]] = None
     coverage: Optional[float] = None
-    dictionary_version: Optional[str] = None
+    dictionary_source: Optional[str] = None  # OCR fusion dictionary source: "CC-CEDICT" or "Translator"
+    dictionary_version: Optional[str] = None  # OCR fusion dictionary version
+    translation_source: Optional[str] = None  # Translation dictionary source: "CC-CEDICT", "RuleBasedTranslator", or "Error"
 
 
 def _load_easyocr() -> Optional[easyocr.Reader]:
@@ -205,12 +185,16 @@ def _preprocess_image(image_bytes: bytes) -> Tuple[np.ndarray, Image.Image]:
     # - RGB conversion, upscaling, contrast/sharpness enhancement
     # - Adaptive padding
     # - Optional: noise reduction, binarization, deskewing, brightness normalization
+    # OPTIMIZED: Minimal preprocessing for handwritten text
+    # Testing confirmed: Aggressive preprocessing (noise reduction, deskewing, brightness norm)
+    # was corrupting handwritten Chinese characters, causing severe OCR accuracy degradation
+    # Current configuration provides best results for handwritten text
     return preprocess_image(
         image_bytes,
-        apply_noise_reduction=True,
-        apply_binarization=False,  # Disable for now - can cause issues with some images
-        apply_deskew=True,
-        apply_brightness_norm=True
+        apply_noise_reduction=False,  # Disabled: Corrupts handwriting
+        apply_binarization=False,      # Disabled: Can cause issues
+        apply_deskew=False,            # Disabled: Corrupts handwriting
+        apply_brightness_norm=False    # Disabled: Corrupts handwriting
     )
 
 
@@ -375,271 +359,42 @@ def run_paddleocr(ocr_reader, img_array: np.ndarray) -> List[NormalizedOCRResult
         return []
 
 
-def calculate_iou(bbox1: List[float], bbox2: List[float]) -> float:
-    """
-    Calculate Intersection over Union (IoU) between two bounding boxes.
-    
-    Args:
-        bbox1: [x1, y1, x2, y2]
-        bbox2: [x1, y1, x2, y2]
-        
-    Returns:
-        IoU value between 0 and 1
-    """
-    x1_1, y1_1, x2_1, y2_1 = bbox1
-    x1_2, y1_2, x2_2, y2_2 = bbox2
-    
-    # Calculate intersection
-    x1_i = max(x1_1, x1_2)
-    y1_i = max(y1_1, y1_2)
-    x2_i = min(x2_1, x2_2)
-    y2_i = min(y2_1, y2_2)
-    
-    if x2_i <= x1_i or y2_i <= y1_i:
-        return 0.0
-    
-    intersection = (x2_i - x1_i) * (y2_i - y1_i)
-    
-    # Calculate union
-    area1 = (x2_1 - x1_1) * (y2_1 - y1_1)
-    area2 = (x2_2 - x1_2) * (y2_2 - y1_2)
-    union = area1 + area2 - intersection
-    
-    if union == 0:
-        return 0.0
-    
-    return intersection / union
-
-
-def align_ocr_outputs(
-    easyocr_results: List[NormalizedOCRResult],
-    paddleocr_results: List[NormalizedOCRResult],
-    iou_threshold: float = 0.3
-) -> List[FusedPosition]:
-    """
-    Align OCR results from both engines using IoU-based matching.
-    Handles character-level alignment preserving all candidates from both engines.
-    
-    Args:
-        easyocr_results: Normalized EasyOCR results
-        paddleocr_results: Normalized PaddleOCR results
-        iou_threshold: Minimum IoU for considering boxes as aligned
-        
-    Returns:
-        List of fused positions with aligned candidates
-    """
-    fused_positions = []
-    used_easyocr = set()
-    used_paddleocr = set()
-    
-    # Sort both result sets by reading order (top-to-bottom, left-to-right)
-    # Primary sort by y1 (top), secondary by x1 (left)
-    easyocr_sorted = sorted(enumerate(easyocr_results), 
-                            key=lambda x: (x[1].bbox[1], x[1].bbox[0]))
-    paddleocr_sorted = sorted(enumerate(paddleocr_results),
-                              key=lambda x: (x[1].bbox[1], x[1].bbox[0]))
-    
-    # Create position lists for sequential matching
-    easyocr_positions = list(easyocr_sorted)
-    paddleocr_positions = list(paddleocr_sorted)
-    
-    # Match results using greedy IoU-based alignment
-    position_idx = 0
-    easyocr_ptr = 0
-    paddleocr_ptr = 0
-    
-    while easyocr_ptr < len(easyocr_positions) or paddleocr_ptr < len(paddleocr_positions):
-        # Get current candidates
-        easyocr_candidate = None
-        paddleocr_candidate = None
-        
-        if easyocr_ptr < len(easyocr_positions):
-            easyocr_idx, easyocr_result = easyocr_positions[easyocr_ptr]
-            if easyocr_idx not in used_easyocr:
-                easyocr_candidate = (easyocr_idx, easyocr_result)
-        
-        if paddleocr_ptr < len(paddleocr_positions):
-            paddleocr_idx, paddleocr_result = paddleocr_positions[paddleocr_ptr]
-            if paddleocr_idx not in used_paddleocr:
-                paddleocr_candidate = (paddleocr_idx, paddleocr_result)
-        
-        # If both candidates exist, check if they align
-        if easyocr_candidate and paddleocr_candidate:
-            iou = calculate_iou(easyocr_candidate[1].bbox, paddleocr_candidate[1].bbox)
-            
-            if iou >= iou_threshold:
-                # Aligned - create fused position with both candidates
-                candidates = [
-                    CharacterCandidate(
-                        char=easyocr_candidate[1].char,
-                        confidence=easyocr_candidate[1].confidence,
-                        source="easyocr"
-                    ),
-                    CharacterCandidate(
-                        char=paddleocr_candidate[1].char,
-                        confidence=paddleocr_candidate[1].confidence,
-                        source="paddleocr"
-                    )
-                ]
-                
-                # Average bbox
-                bbox1 = easyocr_candidate[1].bbox
-                bbox2 = paddleocr_candidate[1].bbox
-                avg_bbox = [
-                    (bbox1[0] + bbox2[0]) / 2,
-                    (bbox1[1] + bbox2[1]) / 2,
-                    (bbox1[2] + bbox2[2]) / 2,
-                    (bbox1[3] + bbox2[3]) / 2
-                ]
-                
-                fused_positions.append(
-                    FusedPosition(
-                        position=position_idx,
-                        bbox=avg_bbox,
-                        candidates=candidates
-                    )
-                )
-                
-                used_easyocr.add(easyocr_candidate[0])
-                used_paddleocr.add(paddleocr_candidate[0])
-                easyocr_ptr += 1
-                paddleocr_ptr += 1
-                position_idx += 1
-                continue
-        
-        # Not aligned - add the one that comes first in reading order
-        if easyocr_candidate and paddleocr_candidate:
-            # Compare reading order
-            easy_y, easy_x = easyocr_candidate[1].bbox[1], easyocr_candidate[1].bbox[0]
-            paddle_y, paddle_x = paddleocr_candidate[1].bbox[1], paddleocr_candidate[1].bbox[0]
-            
-            if easy_y < paddle_y or (easy_y == paddle_y and easy_x < paddle_x):
-                # EasyOCR comes first
-                fused_positions.append(
-                    FusedPosition(
-                        position=position_idx,
-                        bbox=easyocr_candidate[1].bbox,
-                        candidates=[
-                            CharacterCandidate(
-                                char=easyocr_candidate[1].char,
-                                confidence=easyocr_candidate[1].confidence,
-                                source="easyocr"
-                            )
-                        ]
-                    )
-                )
-                used_easyocr.add(easyocr_candidate[0])
-                easyocr_ptr += 1
-            else:
-                # PaddleOCR comes first
-                fused_positions.append(
-                    FusedPosition(
-                        position=position_idx,
-                        bbox=paddleocr_candidate[1].bbox,
-                        candidates=[
-                            CharacterCandidate(
-                                char=paddleocr_candidate[1].char,
-                                confidence=paddleocr_candidate[1].confidence,
-                                source="paddleocr"
-                            )
-                        ]
-                    )
-                )
-                used_paddleocr.add(paddleocr_candidate[0])
-                paddleocr_ptr += 1
-            position_idx += 1
-        elif easyocr_candidate:
-            # Only EasyOCR candidate available
-            fused_positions.append(
-                FusedPosition(
-                    position=position_idx,
-                    bbox=easyocr_candidate[1].bbox,
-                    candidates=[
-                        CharacterCandidate(
-                            char=easyocr_candidate[1].char,
-                            confidence=easyocr_candidate[1].confidence,
-                            source="easyocr"
-                        )
-                    ]
-                )
-            )
-            used_easyocr.add(easyocr_candidate[0])
-            easyocr_ptr += 1
-            position_idx += 1
-        elif paddleocr_candidate:
-            # Only PaddleOCR candidate available
-            fused_positions.append(
-                FusedPosition(
-                    position=position_idx,
-                    bbox=paddleocr_candidate[1].bbox,
-                    candidates=[
-                        CharacterCandidate(
-                            char=paddleocr_candidate[1].char,
-                            confidence=paddleocr_candidate[1].confidence,
-                            source="paddleocr"
-                        )
-                    ]
-                )
-            )
-            used_paddleocr.add(paddleocr_candidate[0])
-            paddleocr_ptr += 1
-            position_idx += 1
-        else:
-            # Both are used, advance both pointers
-            easyocr_ptr += 1
-            paddleocr_ptr += 1
-    
-    logger.info("Aligned %d positions from %d EasyOCR + %d PaddleOCR results",
-                len(fused_positions), len(easyocr_results), len(paddleocr_results))
-    
-    return fused_positions
-
-
-def fuse_character_candidates(fused_positions: List[FusedPosition]) -> Tuple[List[Glyph], str]:
-    """
-    Convert fused positions to Glyph objects and full text string.
-    For each position, use the highest-confidence candidate as the primary character.
-    
-    Args:
-        fused_positions: List of fused character positions
-        
-    Returns:
-        Tuple of (list of Glyph objects, full text string)
-    """
-    glyphs = []
-    full_text_parts = []
-    
-    for pos in fused_positions:
-        if not pos.candidates:
-            continue
-        
-        # Select highest confidence candidate as primary
-        best_candidate = max(pos.candidates, key=lambda c: c.confidence)
-        
-        # Convert bbox from [x1, y1, x2, y2] to [x, y, w, h] for Glyph
-        x1, y1, x2, y2 = pos.bbox
-        bbox_glyph = [x1, y1, x2 - x1, y2 - y1]
-        
-        glyphs.append(
-            Glyph(
-                symbol=best_candidate.char,
-                bbox=bbox_glyph,
-                confidence=best_candidate.confidence,
-                meaning=None
-            )
-        )
-        full_text_parts.append(best_candidate.char)
-    
-    full_text = "".join(full_text_parts)
-    return glyphs, full_text
-
-
 # Initialize OCR engines and translators
 easyocr_reader = _load_easyocr()
 paddleocr_reader = _load_paddleocr()
 translator = get_translator()  # Dictionary-based translator
 sentence_translator = get_sentence_translator()  # Neural sentence translator (MarianMT)
 qwen_refiner = get_qwen_refiner()  # Qwen LLM refiner
+
+# Initialize CC-CEDICT dictionary for OCR fusion tie-breaking
+# ENABLED: Provides intelligent tie-breaking when OCR engines have equal confidence
+# Testing confirmed: No negative impact when not needed, potential benefit in tie scenarios
+cc_dictionary: Optional[CCDictionary] = None
+try:
+    # Use path relative to this file's location
+    cc_dict_path = Path(__file__).parent / "data" / "cc_cedict.json"
+    cc_dictionary = CCDictionary(str(cc_dict_path))
+    print(f"✅ CC-CEDICT dictionary loaded successfully with {len(cc_dictionary):,} entries.")
+    logger.info("CC-CEDICT dictionary loaded successfully with %d entries.", len(cc_dictionary))
+except Exception as e:
+    print(f"⚠️  Failed to load CC-CEDICT: {e}. Falling back to translator for OCR fusion.")
+    logger.warning("Failed to load CC-CEDICT: %s. Falling back to translator for OCR fusion.", e)
+    cc_dictionary = None
+
+# Initialize CC-CEDICT translator for character translation (replaces RuleBasedTranslator)
+# Note: This loads its own CCDictionary instance for translation purposes only
+cc_translator: Optional[CCDictionaryTranslator] = None
+try:
+    cc_dict_path = Path(__file__).parent / "data" / "cc_cedict.json"
+    translation_dictionary = CCDictionary(str(cc_dict_path))
+    cc_translator = CCDictionaryTranslator(translation_dictionary, default_strategy=DefinitionStrategy.FIRST)
+    print(f"✅ CC-CEDICT translator initialized ({len(cc_translator):,} entries, strategy: {cc_translator.default_strategy.value}).")
+    logger.info("CCDictionaryTranslator initialized with %d entries (strategy: %s)", 
+               len(cc_translator), cc_translator.default_strategy.value)
+except Exception as e:
+    print(f"⚠️  Failed to initialize CCDictionaryTranslator: {e}. Falling back to RuleBasedTranslator.")
+    logger.warning("Failed to initialize CCDictionaryTranslator: %s. Falling back to RuleBasedTranslator.", e)
+    cc_translator = None
 
 if easyocr_reader is None:
     logger.warning("EasyOCR not available. OCR functionality will be limited.")
@@ -836,7 +591,29 @@ async def process_image(file: UploadFile = File(...)):
             )
         
         # Convert to Glyph objects and full text
-        glyphs, full_text = fuse_character_candidates(fused_positions)
+        # Use CC-CEDICT for intelligent tie-breaking (when OCR engines have equal confidence)
+        # Testing confirmed: Harmless when not needed, helpful in true tie scenarios
+        fusion_dictionary = cc_dictionary if cc_dictionary is not None else None
+        
+        # Add lookup_character method wrapper if dictionary doesn't have it
+        if fusion_dictionary and not hasattr(fusion_dictionary, "lookup_character"):
+            # Wrap lookup_entry to match expected API
+            fusion_dictionary.lookup_character = lambda char: fusion_dictionary.lookup_entry(char)
+        
+        glyphs, full_text, ocr_confidence, ocr_coverage = fuse_character_candidates(
+            fused_positions, translator=fusion_dictionary
+        )
+        
+        # Capture dictionary metadata for API response
+        if fusion_dictionary == cc_dictionary and cc_dictionary is not None:
+            # Using CC-CEDICT
+            ocr_dict_source = "CC-CEDICT"
+            ocr_dict_metadata = cc_dictionary.get_metadata()
+            ocr_dict_version = ocr_dict_metadata.get("format_version", "1.0")
+        else:
+            # No dictionary (confidence-based)
+            ocr_dict_source = "None (Confidence-Based)"
+            ocr_dict_version = None
         
         if not full_text or not full_text.strip():
             raise HTTPException(
@@ -844,8 +621,15 @@ async def process_image(file: UploadFile = File(...)):
                 detail="No text could be extracted from the image."
             )
         
-        logger.info("Fused %d positions into %d glyphs, text length: %d",
-                    len(fused_positions), len(glyphs), len(full_text))
+        logger.info(
+            "Fused %d positions into %d glyphs, text length: %d (confidence: %.2f%%, coverage: %.1f%%) [Dict: %s]",
+            len(fused_positions), len(glyphs), len(full_text),
+            ocr_confidence * 100, ocr_coverage, ocr_dict_source
+        )
+        
+        # Log dictionary performance stats (debug level)
+        if cc_dictionary is not None:
+            cc_dictionary.log_performance_stats(level="debug")
         
     except HTTPException:
         raise
@@ -857,6 +641,8 @@ async def process_image(file: UploadFile = File(...)):
         ) from e
     
     # Translate text using dictionary
+    # Priority: CC-CEDICT Translator (120k entries) → RuleBasedTranslator (276 entries)
+    translation_source = "Unknown"
     try:
         glyph_dicts = [
             {
@@ -867,8 +653,31 @@ async def process_image(file: UploadFile = File(...)):
             for g in glyphs
         ]
         
-        translation_result = translator.translate_text(full_text, glyph_dicts)
-        logger.info("Translation completed: %.1f%% coverage", translation_result.get('coverage', 0))
+        # Try CC-CEDICT translator first (if available)
+        if cc_translator is not None:
+            try:
+                logger.debug("Using CCDictionaryTranslator for translation (120,474 entries)")
+                result = cc_translator.translate_text(full_text, glyphs)
+                translation_result = result.to_dict()  # Convert to dict format
+                translation_source = "CC-CEDICT"
+                logger.info("CC-CEDICT translation completed: %.1f%% coverage (%d/%d characters)", 
+                           result.coverage, result.mapped_characters, result.total_characters)
+                # Log performance statistics (debug level)
+                cc_translator.log_translation_stats(level="debug")
+            except Exception as cc_error:
+                logger.warning("CCDictionaryTranslator failed: %s. Falling back to RuleBasedTranslator.", cc_error)
+                # Fall back to RuleBasedTranslator
+                translation_result = translator.translate_text(full_text, glyph_dicts)
+                translation_source = "RuleBasedTranslator"
+                logger.info("RuleBasedTranslator (fallback) completed: %.1f%% coverage", 
+                           translation_result.get('coverage', 0))
+        else:
+            # CC-CEDICT not available, use RuleBasedTranslator
+            logger.debug("Using RuleBasedTranslator for translation (276 entries)")
+            translation_result = translator.translate_text(full_text, glyph_dicts)
+            translation_source = "RuleBasedTranslator"
+            logger.info("RuleBasedTranslator translation completed: %.1f%% coverage", 
+                       translation_result.get('coverage', 0))
         
     except Exception as e:
         logger.error("Translation failed: %s", e)
@@ -879,6 +688,7 @@ async def process_image(file: UploadFile = File(...)):
             "coverage": 0.0,
             "dictionary_version": "1.0.0"
         }
+        translation_source = "Error"
     
     # Enrich glyphs with meanings from translation
     enriched_glyphs = []
@@ -898,13 +708,14 @@ async def process_image(file: UploadFile = File(...)):
         else:
             enriched_glyphs.append(original_glyph)
     
-    # Calculate average confidence
-    if enriched_glyphs:
-        avg_confidence = sum(g.confidence for g in enriched_glyphs) / len(enriched_glyphs)
-    else:
-        avg_confidence = 0.0
+    # Use OCR metrics from fusion step (computed during fuse_character_candidates)
+    # ocr_confidence: Average confidence of OCR detections (0.0-1.0)
+    # ocr_coverage: Percentage of characters with dictionary entries (0.0-100.0)
     
-    logger.info("Processing complete: %d glyphs, confidence: %.2f", len(enriched_glyphs), avg_confidence)
+    logger.info(
+        "Processing complete: %d glyphs, OCR confidence: %.2f%%, coverage: %.1f%%",
+        len(enriched_glyphs), ocr_confidence * 100, ocr_coverage
+    )
     
     # Log the extracted OCR text for debugging
     logger.info("Extracted OCR text (first 200 chars): %s", full_text[:200] if full_text else "Empty")
@@ -958,9 +769,11 @@ async def process_image(file: UploadFile = File(...)):
         sentence_translation=sentence_translation,  # Neural sentence translation (MarianMT)
         refined_translation=refined_translation,  # Qwen-refined translation
         qwen_status=qwen_status,  # Status: "available", "unavailable", "failed", "skipped"
-        confidence=avg_confidence,
+        confidence=ocr_confidence,  # OCR fusion average confidence (0.0-1.0)
         glyphs=enriched_glyphs,
         unmapped=translation_result.get("unmapped", []),
-        coverage=translation_result.get("coverage", 0.0),
-        dictionary_version=translation_result.get("dictionary_version")
+        coverage=ocr_coverage,  # OCR fusion dictionary coverage (0.0-100.0 percentage)
+        dictionary_source=ocr_dict_source,  # OCR fusion dictionary source (CC-CEDICT or Translator)
+        dictionary_version=ocr_dict_version,  # OCR fusion dictionary version
+        translation_source=translation_source  # Translation dictionary source (CC-CEDICT, RuleBasedTranslator, or Error)
     )
