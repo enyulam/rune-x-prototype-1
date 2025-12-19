@@ -4,7 +4,7 @@ This document explains the complete logic flow of how the Rune-X platform proces
 
 ## Overview
 
-The platform uses a **hybrid OCR system** that combines EasyOCR and PaddleOCR engines, then fuses their results at the character level. Translation is performed using a **three-tier system**: dictionary-based character translation, MarianMT neural sentence translation, and Qwen LLM refinement for improved coherence and OCR noise correction.
+The platform uses a **hybrid OCR system** that combines EasyOCR and PaddleOCR engines, then fuses their results at the character level using the **OCR Fusion Module** with CC-CEDICT dictionary-guided tie-breaking. Translation is performed using a **three-tier system**: CC-CEDICT dictionary-based character translation (120,474 entries), MarianMT neural sentence translation via **MarianAdapter** (Phase 5) with token locking and semantic constraints, and Qwen LLM refinement via **QwenAdapter** (Phase 6) with token locking preservation and semantic confidence metrics.
 
 ---
 
@@ -284,17 +284,20 @@ services/preprocessing/
 
 ---
 
-## Phase 5: Result Alignment & Fusion
+## Phase 5: OCR Fusion (Character-Level Alignment & Selection)
+
+**Module**: `services/inference/ocr_fusion.py`  
+**Status**: ✅ Production-Ready (Phase 3: CC-CEDICT Integration)
 
 ### Step 5.1: Sort by Reading Order
-**Location**: `services/inference/main.py` → `align_ocr_outputs()`
+**Location**: `services/inference/ocr_fusion.py` → `align_ocr_outputs()`
 
 - Sorts EasyOCR results: primary by Y-coordinate (top), secondary by X-coordinate (left)
 - Sorts PaddleOCR results: same reading order
 - Ensures characters are processed in natural reading sequence
 
 ### Step 5.2: IoU-Based Alignment
-**Location**: `services/inference/main.py` → `align_ocr_outputs()`
+**Location**: `services/inference/ocr_fusion.py` → `align_ocr_outputs()`
 
 For each character position:
 
@@ -329,14 +332,17 @@ For each character position:
 
 **Output**: List of `FusedPosition` objects with aligned candidates
 
-### Step 5.3: Character Selection
-**Location**: `services/inference/main.py` → `fuse_character_candidates()`
+### Step 5.3: Character Selection with CC-CEDICT Tie-Breaking
+**Location**: `services/inference/ocr_fusion.py` → `fuse_character_candidates()`
 
 For each fused position:
 
 1. **Select Best Candidate**:
-   - Chooses highest confidence candidate as primary
-   - Example: If EasyOCR=0.92, PaddleOCR=0.88 → selects EasyOCR's "我"
+   - **If confidence differs clearly**: Chooses highest confidence candidate
+   - **If confidence is equal** (tie): Uses **CC-CEDICT dictionary-guided tie-breaking**
+     - Checks if candidates exist in CC-CEDICT dictionary (120,474 entries)
+     - Prefers valid dictionary entries over non-dictionary characters
+     - Example: If both "你" and "你" have 0.85 confidence, prefers valid dictionary entry
 
 2. **Convert to Glyph Format**:
    - Converts bbox from `[x1, y1, x2, y2]` to `[x, y, w, h]`
@@ -353,57 +359,72 @@ For each fused position:
 3. **Build Full Text**:
    - Concatenates all primary characters: `"我"`
 
+4. **Calculate Quality Metrics**:
+   - **Average Confidence**: Mean OCR confidence across all glyphs (0.0-1.0)
+   - **Translation Coverage**: Percentage of characters with dictionary entries (0.0-100.0%)
+
 **Output**: 
 - List of `Glyph` objects
 - Full text string: `"我"`
+- Average confidence: `0.92`
+- Translation coverage: `100.0%`
 
 ---
 
-## Phase 6: Dictionary-Based Translation
+## Phase 6: CC-CEDICT Dictionary Translation
 
-### Step 6.1: Prepare Translation Input
+**Module**: `services/inference/cc_translation.py`  
+**Status**: ✅ Production-Ready (Phase 4: CC-CEDICT Translation Module)  
+**Dictionary**: CC-CEDICT with 120,474 entries (replaces 276-entry RuleBasedTranslator)
+
+### Step 6.1: Initialize CC-CEDICT Translator
 **Location**: `services/inference/main.py` → `process_image()`
 
-- Converts `Glyph` objects to dictionary format:
-  ```python
-  [
-    {"symbol": "我", "bbox": [...], "confidence": 0.92},
-    ...
-  ]
-  ```
+- Initializes `CCDictionary` from `data/cc_cedict.json` (120,474 entries)
+- Creates `CCDictionaryTranslator` instance
+- Falls back to `RuleBasedTranslator` if CC-CEDICT unavailable
 
-### Step 6.2: Dictionary Lookup
-**Location**: `services/inference/translator.py` → `translate_text()`
+### Step 6.2: Character-Level Translation
+**Location**: `services/inference/cc_translation.py` → `translate_text()`
 
 For each character in the text:
 
-1. **Exact Match Lookup**:
-   - Searches `dictionary.json` for character
-   - Example: Looks up `"我"` → finds entry
+1. **CC-CEDICT Lookup**:
+   - Searches CC-CEDICT dictionary for character
+   - Handles traditional/simplified forms automatically
+   - Example: Looks up `"我"` → finds entry with multiple definitions
 
-2. **Alternative Form Check**:
-   - If not found, searches `alts` fields in all entries
-   - Handles variant character forms
+2. **Definition Selection**:
+   - Uses `DefinitionStrategy` (default: `FIRST`)
+   - Available strategies:
+     - `FIRST`: Use first definition (default)
+     - `SHORTEST`: Use shortest definition (most concise)
+     - `MOST_COMMON`: Use most common English words (future)
+     - `CONTEXT_AWARE`: Based on surrounding characters (future)
 
 3. **Extract Meaning**:
-   - Retrieves `meaning` field from dictionary entry
+   - Retrieves primary definition from CC-CEDICT entry
    - Example: `"我"` → `"I; me; myself; we; our"`
+   - Stores all definitions for reference
 
 4. **Enrich Glyph**:
    - Adds meaning to glyph object
-   - Tracks unmapped characters (not in dictionary)
+   - Includes pinyin, traditional/simplified forms
+   - Tracks unmapped characters (not in CC-CEDICT)
 
 5. **Build Translation String**:
    - Concatenates meanings with separator: `" | "`
    - Example: `"I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"`
 
 ### Step 6.3: Calculate Statistics
-**Location**: `services/inference/translator.py` → `translate_text()`
+**Location**: `services/inference/cc_translation.py` → `translate_text()`
 
-- **Coverage**: Percentage of characters with dictionary entries
+- **Coverage**: Percentage of characters with CC-CEDICT entries
   - Formula: `(mapped_chars / total_chars) × 100`
-- **Unmapped List**: Characters not found in dictionary
-- **Dictionary Version**: Version from dictionary metadata
+  - Typical coverage: 80%+ (vs ~30% with RuleBasedTranslator)
+- **Unmapped List**: Characters not found in CC-CEDICT
+- **Dictionary Source**: "CC-CEDICT" or "RuleBasedTranslator" (fallback)
+- **Dictionary Version**: CC-CEDICT version from metadata
 
 **Output**: Translation result dictionary:
 ```python
@@ -412,112 +433,200 @@ For each character in the text:
   "translation": "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself",
   "unmapped": [],
   "coverage": 100.0,
+  "translation_source": "CC-CEDICT",
   "dictionary_version": "1.0.0"
 }
 ```
 
 ---
 
-## Phase 7: Neural Sentence Translation (MarianMT)
+## Phase 7: Neural Sentence Translation (MarianAdapter - Phase 5)
 
-### Step 7.1: Initialize MarianMT Translation
+**Module**: `services/inference/marian_adapter.py`  
+**Status**: ✅ Production-Ready (Phase 5: MarianMT Refactoring)  
+**Role**: Grammar and fluency optimizer under semantic constraints
+
+### Step 7.1: Initialize MarianAdapter
 **Location**: `services/inference/main.py` → `process_image()`
 
-- Checks if `sentence_translator` is available
+- Initializes `MarianAdapter` wrapping `SentenceTranslator`
+- Loads `SemanticContract` for constraint enforcement
 - MarianMT model loads lazily on first use (~300MB download)
+- Falls back to direct `SentenceTranslator` if adapter unavailable
 
-### Step 7.2: Translate Full Sentence
-**Location**: `services/inference/sentence_translator.py` → `translate()`
+### Step 7.2: Identify Locked Tokens
+**Location**: `services/inference/marian_adapter.py` → `_identify_locked_tokens()`
+
+For each glyph:
+1. **Check Locking Criteria**:
+   - **Lock if**: OCR confidence ≥ 0.85 AND dictionary match exists
+   - **Lock if**: OCR confidence ≥ 0.85 (even without dictionary)
+   - **Unlock if**: OCR confidence < 0.70 (low confidence, allow improvement)
+   - **Unlock if**: Multi-glyph ambiguity exists (let MarianMT resolve)
+
+2. **Create Locked Token List**:
+   - Stores glyph indices that must be preserved
+   - Example: Glyphs 0, 1, 3, 4 locked (high confidence + dictionary)
+
+### Step 7.3: Replace Locked Tokens with Placeholders
+**Location**: `services/inference/marian_adapter.py` → `_replace_locked_with_placeholders()`
+
+- Replaces locked Chinese characters with placeholders before MarianMT
+- Format: `__LOCK_人__`, `__LOCK_好__`, etc.
+- Example: `"你好世界"` → `"__LOCK_你____LOCK_好__世界"` (if "你" and "好" are locked)
+
+### Step 7.4: MarianMT Translation
+**Location**: `services/inference/marian_adapter.py` → `translate()`
 
 1. **Input Validation**:
    - Checks if text is empty
    - Truncates to 512 characters if too long
 
 2. **Tokenization**:
-   - Converts Chinese text to token IDs using MarianMT tokenizer
-   - Adds padding and truncation
-   - Returns PyTorch tensors
+   - Converts Chinese text (with placeholders) to token IDs
+   - Placeholders survive tokenization unchanged
 
 3. **Neural Translation**:
    - MarianMT encoder-decoder generates English tokens
    - Processes entire sentence as context
-   - Considers full sentence structure
+   - Placeholders translate to themselves (preserved)
 
 4. **Decoding**:
    - Converts token IDs back to English text
-   - Removes special tokens (padding, etc.)
+   - Placeholders remain intact
 
-**Output**: Natural English sentence translation
-- Example: `"我爱你"` → `"I love you"`
+**Output**: English translation with placeholders
+- Example: `"__LOCK_你____LOCK_好__世界"` → `"__LOCK_你____LOCK_好__ world"`
 
-### Step 7.3: Error Handling
+### Step 7.5: Restore Locked Tokens
+**Location**: `services/inference/marian_adapter.py` → `_restore_locked_tokens()`
+
+- Replaces placeholders with original Chinese characters
+- Example: `"__LOCK_你____LOCK_好__ world"` → `"你好 world"`
+
+### Step 7.6: Phrase-Level Refinement
+**Location**: `services/inference/marian_adapter.py` → `_identify_phrase_spans()`
+
+- Groups glyphs into `PhraseSpan` objects
+- Identifies locked vs unlocked phrase spans
+- Enables phrase-level semantic refinement (framework ready)
+
+### Step 7.7: Track Token Changes & Calculate Metrics
+**Location**: `services/inference/marian_adapter.py` → `_track_token_changes()`, `_calculate_semantic_metrics()`
+
+- Tracks which tokens were changed vs preserved
+- Calculates semantic confidence score (0.0-1.0)
+- Computes token modification percentages
+- Tracks dictionary override count
+
+**Output**: `MarianAdapterOutput` with:
+- `translation`: Natural English sentence translation
+- `locked_tokens`: List of locked glyph indices
+- `preserved_tokens`: List of preserved glyph indices
+- `changed_tokens`: List of changed glyph indices
+- `semantic_confidence`: Confidence score (0.0-1.0)
+- `metadata`: Detailed metrics and statistics
+
+**Example**: `"我爱你"` → `"I love you"` (with tokens 0, 1, 2 locked if high confidence)
+
+### Step 7.8: Error Handling
+- If adapter fails → falls back to direct `SentenceTranslator`
 - If translation fails → returns `None` (graceful fallback)
 - Logs errors for debugging
 - Pipeline continues even if MarianMT fails
 
 ---
 
-## Phase 8: Qwen LLM Refinement
+## Phase 8: Qwen LLM Refinement (QwenAdapter - Phase 6)
 
-### Step 8.1: Initialize Qwen Refiner
+**Module**: `services/inference/qwen_adapter.py`  
+**Status**: ✅ Production-Ready (Phase 6: Qwen 2.5B Refinement)  
+**Role**: Fluency and coherence optimizer under constraints
+
+### Step 8.1: Initialize QwenAdapter
 **Location**: `services/inference/main.py` → `process_image()`
 
-- Checks if `qwen_refiner` is available
+- Initializes `QwenAdapter` wrapping `QwenRefiner`
+- Loads `QwenSemanticContract` for constraint enforcement
 - Qwen model loads lazily on first use (~3GB download)
 - Uses Qwen2.5-1.5B-Instruct model (CPU-friendly)
+- Falls back to direct `QwenRefiner` if adapter unavailable
 
-### Step 8.2: Detect Sentence Boundaries
-**Location**: `services/inference/qwen_refiner.py` → `_detect_sentence_boundaries()`
+### Step 8.2: Map Glyphs to English Tokens
+**Location**: `services/inference/qwen_adapter.py` → `_map_glyphs_to_english_tokens()`
 
-- Splits OCR text on periods, line breaks, and Chinese punctuation (。！？)
-- Preserves sentence structure for better refinement
-- Handles single sentences or multiple sentences
+- Maps Chinese glyph indices to English token indices (heuristic)
+- Proportional mapping: `glyph_index ≈ round(token_index * (len(glyphs) / len(tokens)))`
+- Derives locked English tokens from locked Chinese glyph indices
+- Example: Locked glyphs [0, 1] → locked English tokens [0, 1]
 
-**Example**:
-- Input: `"我爱你。你好吗？"`
-- Output: `["我爱你。", "你好吗？"]`
+### Step 8.3: Identify Phrase Spans
+**Location**: `services/inference/qwen_adapter.py` → `_identify_phrase_spans()`
 
-### Step 8.3: Create Refinement Prompt
-**Location**: `services/inference/qwen_refiner.py` → `_create_refinement_prompt()`
+- Identifies contiguous spans of English tokens forming candidate phrases
+- Groups tokens into `PhraseSpan` objects
+- Marks spans as locked/unlocked based on token lock status
+- Collects glyph indices for each phrase span
 
-Creates prompt with:
-- Original OCR text (may contain noise)
-- MarianMT translation
-- Instructions to:
-  - Correct OCR noise-induced mistranslations
-  - Improve contextual coherence
-  - Improve fluency without adding information
-  - Preserve sentence order and structure
-  - Prefer literal accuracy over creative paraphrasing
-  - Avoid hallucination
+### Step 8.4: Replace Locked English Tokens with Placeholders
+**Location**: `services/inference/qwen_adapter.py` → `_replace_locked_with_placeholders()`
 
-### Step 8.4: Qwen Inference
-**Location**: `services/inference/qwen_refiner.py` → `refine_translation_with_qwen()`
+- Replaces locked English tokens with placeholders before Qwen refinement
+- Format: `__LOCK_T0__`, `__LOCK_T1__`, etc.
+- Example: `"Hello world test"` → `"__LOCK_T0__ __LOCK_T1__ test"` (if tokens 0, 1 are locked)
 
-1. **Format Input**:
+### Step 8.5: Qwen Refinement
+**Location**: `services/inference/qwen_adapter.py` → `translate()`
+
+1. **Call QwenRefiner**:
+   - Passes text with placeholders to `QwenRefiner.refine_translation_with_qwen()`
+   - Qwen processes text (should preserve placeholders)
+   - Original OCR text provided for context
+
+2. **Qwen Inference** (internal to QwenRefiner):
    - Applies Qwen chat template to prompt
-   - Tokenizes input for model
+   - Uses Qwen2.5-1.5B-Instruct model
+   - Parameters: `temperature=0.3`, `top_p=0.9`
+   - Generates refined output
 
-2. **Generate Refined Translation**:
-   - Uses Qwen model to generate refined output
-   - Parameters:
-     - `temperature=0.3` (deterministic)
-     - `max_new_tokens` (limited to prevent excessive generation)
-     - `top_p=0.9` (nucleus sampling)
+**Output**: Refined English translation with placeholders
+- Example: `"__LOCK_T0__ __LOCK_T1__ test"` → `"__LOCK_T0__ __LOCK_T1__ test!"` (Qwen adds punctuation)
 
-3. **Decode Response**:
-   - Converts token IDs to text
-   - Cleans up tokenization artifacts
+### Step 8.6: Restore Locked Tokens
+**Location**: `services/inference/qwen_adapter.py` → `_restore_locked_tokens()`
 
-4. **Validation**:
-   - Checks output length (not too short/long)
-   - Ensures reasonable quality
+- Replaces placeholders with original English tokens
+- Example: `"__LOCK_T0__ __LOCK_T1__ test!"` → `"Hello world test!"`
 
-**Output**: Refined English translation
-- Example: MarianMT `"I love you"` → Qwen `"I love you"` (improved coherence, corrected OCR noise)
+### Step 8.7: Phrase-Level Refinement (Framework Ready)
+**Location**: `services/inference/qwen_adapter.py` → `_refine_phrases()`
 
-### Step 8.5: Error Handling
-- If refinement fails → returns `None` (falls back to MarianMT)
+- Currently a placeholder (no-op, logs only)
+- Future enhancement: Call Qwen on each unlocked phrase separately
+- Merge refined phrases back into final text
+
+### Step 8.8: Track Changes & Calculate Confidence
+**Location**: `services/inference/qwen_adapter.py` → `_track_qwen_changes()`, `_calculate_qwen_confidence()`
+
+- Tracks which English tokens were changed vs preserved
+- Calculates `qwen_confidence` score (0.0-1.0) using weighted factors:
+  - 40% weight: Locked token preservation rate
+  - 30% weight: Unlocked token stability
+  - 30% weight: Phrase-level fluency score (heuristic)
+
+**Output**: `QwenAdapterOutput` with:
+- `refined_text`: Refined English translation
+- `changed_tokens`: List of modified English token indices
+- `preserved_tokens`: List of preserved English token indices
+- `locked_tokens`: List of locked English token indices
+- `qwen_confidence`: Confidence score (0.0-1.0)
+- `metadata`: Detailed metrics and statistics
+
+**Example**: MarianMT `"I love you"` → Qwen `"I love you!"` (improved coherence, locked tokens preserved)
+
+### Step 8.9: Error Handling
+- If adapter fails → falls back to direct `QwenRefiner`
+- If refinement fails → returns `None` (falls back to MarianMT translation)
 - Logs errors for debugging
 - Pipeline continues with MarianMT translation if Qwen fails
 
@@ -535,13 +644,14 @@ Creates prompt with:
 ### Step 9.2: Build Response
 **Location**: `services/inference/main.py` → `process_image()`
 
-Creates `InferenceResponse` with all three translation types:
+Creates `InferenceResponse` with all three translation types and metadata:
 ```python
 {
   "text": "我爱你",
   "translation": "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself",
   "sentence_translation": "I love you",
-  "refined_translation": "I love you",
+  "refined_translation": "I love you!",
+  "qwen_status": "available",
   "confidence": 0.92,
   "glyphs": [
     {
@@ -565,14 +675,46 @@ Creates `InferenceResponse` with all three translation types:
   ],
   "unmapped": [],
   "coverage": 100.0,
-  "dictionary_version": "1.0.0"
+  "dictionary_source": "CC-CEDICT",
+  "dictionary_version": "1.0.0",
+  "translation_source": "CC-CEDICT",
+  "semantic": {
+    "engine": "MarianMT",
+    "semantic_confidence": 0.85,
+    "tokens_modified": 0,
+    "tokens_locked": 3,
+    "tokens_preserved": 3,
+    "tokens_modified_percent": 0.0,
+    "tokens_locked_percent": 100.0,
+    "tokens_preserved_percent": 100.0,
+    "dictionary_override_count": 0
+  },
+  "qwen": {
+    "engine": "Qwen2.5-1.5B-Instruct",
+    "qwen_confidence": 0.90,
+    "tokens_modified": 1,
+    "tokens_locked": 3,
+    "tokens_preserved": 2,
+    "tokens_modified_percent": 20.0,
+    "tokens_locked_percent": 60.0,
+    "tokens_preserved_percent": 40.0,
+    "phrase_spans_refined": 1,
+    "phrase_spans_locked": 1
+  }
 }
 ```
 
 **Translation Fields Explained**:
-- `translation`: Dictionary-based character-level meanings (concatenated)
-- `sentence_translation`: MarianMT neural sentence translation (context-aware)
-- `refined_translation`: Qwen-refined translation (improved coherence, OCR noise corrected)
+- `translation`: CC-CEDICT dictionary-based character-level meanings (concatenated)
+- `sentence_translation`: MarianMT neural sentence translation via MarianAdapter (context-aware, with token locking)
+- `refined_translation`: Qwen-refined translation via QwenAdapter (improved coherence, OCR noise corrected, locked tokens preserved)
+- `qwen_status`: Status of Qwen refinement ("available", "unavailable", "failed", "skipped")
+
+**Metadata Fields**:
+- `semantic`: MarianAdapter metadata (token locking, semantic confidence, change tracking)
+- `qwen`: QwenAdapter metadata (token locking preservation, qwen_confidence, phrase spans)
+- `dictionary_source`: OCR fusion dictionary source ("CC-CEDICT" or "Translator")
+- `translation_source`: Translation dictionary source ("CC-CEDICT", "RuleBasedTranslator", or "Error")
 
 ### Step 9.3: Return to Frontend
 **Location**: `services/inference/main.py` → `process_image()`
@@ -654,44 +796,56 @@ Creates `InferenceResponse` with all three translation types:
 2. **Handles Variations**: Works even if engines detect slightly different bounding boxes
 3. **Configurable**: IoU threshold (0.3) balances strictness vs. flexibility
 
-### Why Dictionary-Based Translation?
+### Why CC-CEDICT Dictionary Translation?
 
-1. **Deterministic**: Consistent results, no API costs
-2. **Fast**: Instant lookup, no network calls
-3. **Extensible**: Easy to add new characters
-4. **Transparent**: Users can see exact source of meanings
+1. **Comprehensive Coverage**: 120,474 entries (vs 276 in RuleBasedTranslator), 80%+ coverage
+2. **Deterministic**: Consistent results, no API costs
+3. **Fast**: Instant lookup, no network calls
+4. **Multiple Definitions**: Handles multiple meanings per character with selection strategies
+5. **Traditional/Simplified**: Automatic handling of character variants
+6. **Transparent**: Users can see exact source of meanings
 
-### Why MarianMT Neural Translation?
+### Why MarianAdapter (MarianMT with Constraints)?
 
 1. **Context-Aware**: Processes entire sentence as context, not just characters
 2. **Natural Output**: Produces grammatically correct, fluent English
 3. **Handles Grammar**: Understands sentence structure and word order
-4. **Complementary**: Works alongside dictionary for comprehensive understanding
+4. **Semantic Constraints**: Respects OCR fusion output and CC-CEDICT anchors
+5. **Token Locking**: Preserves high-confidence glyph meanings (≥0.85 OCR + dictionary match)
+6. **Phrase-Level Refinement**: Operates at phrase-level granularity for better context
+7. **Explainable**: Provides semantic confidence metrics and change tracking
+8. **Complementary**: Works alongside dictionary for comprehensive understanding
 
-### Why Qwen LLM Refinement?
+### Why QwenAdapter (Qwen with Constraints)?
 
 1. **OCR Noise Correction**: Corrects mistranslations caused by OCR errors
 2. **Coherence Improvement**: Enhances contextual coherence across sentences
 3. **Fluency Enhancement**: Improves readability without altering meaning
-4. **Local Processing**: Fully local, no cloud APIs, deterministic
-5. **Structure Preservation**: Maintains sentence order and paragraph boundaries
-6. **Literal Accuracy**: Prefers accuracy over creative paraphrasing
+4. **Token Locking Preservation**: Never alters locked tokens (from MarianAdapter)
+5. **Semantic Constraints**: Respects MarianMT output and semantic constraints
+6. **Phrase-Level Refinement**: Framework ready for phrase-level processing
+7. **Semantic Confidence**: Provides qwen_confidence metrics for quality assessment
+8. **Local Processing**: Fully local, no cloud APIs, deterministic
+9. **Structure Preservation**: Maintains sentence order and paragraph boundaries
+10. **Literal Accuracy**: Prefers accuracy over creative paraphrasing
+11. **Explainable**: Provides transparency into what changed vs preserved
 
 ---
 
 ## Performance Characteristics
 
-- **Total Processing Time**: 5-20 seconds (typical image)
+- **Total Processing Time**: 5-25 seconds (typical image)
   - First request: 30-90 seconds (model downloads + initialization)
-  - Subsequent requests: 5-20 seconds
+  - Subsequent requests: 5-25 seconds
 - **OCR Phase**: 2-5 seconds (both engines in parallel)
-- **Alignment/Fusion**: < 100ms
-- **Dictionary Translation**: < 50ms (dictionary lookup)
-- **MarianMT Translation**: 1-3 seconds (neural inference)
-- **Qwen Refinement**: 5-15 seconds (LLM inference, CPU-dependent)
+- **OCR Fusion**: < 100ms (alignment + character selection + CC-CEDICT tie-breaking)
+- **CC-CEDICT Translation**: < 100ms (dictionary lookup, 120,474 entries)
+- **MarianAdapter Translation**: 1-4 seconds (neural inference + token locking + phrase refinement)
+- **QwenAdapter Refinement**: 5-15 seconds (LLM inference + token locking + confidence calculation, CPU-dependent)
 - **Memory Usage**: ~3-5GB (OCR engines + MarianMT + Qwen models loaded)
   - EasyOCR: ~500MB
   - PaddleOCR: ~500MB
+  - CC-CEDICT Dictionary: ~50MB (JSON in memory)
   - MarianMT: ~300MB
   - Qwen2.5-1.5B: ~3GB
 
@@ -704,11 +858,15 @@ The system includes comprehensive error handling at each phase:
 1. **File Validation**: Rejects invalid formats/sizes early
 2. **OCR Failures**: One engine can fail, other continues (graceful degradation)
 3. **No Text Detected**: Returns 422 with helpful message
-4. **Dictionary Misses**: Tracks unmapped characters for expansion
-5. **MarianMT Failures**: Falls back gracefully, returns `None` if unavailable
-6. **Qwen Refinement Failures**: Falls back to MarianMT translation, doesn't break pipeline
-7. **Timeouts**: 30-second timeout per OCR engine
-8. **Model Loading**: Lazy loading with error handling, graceful fallback if models unavailable
+4. **OCR Fusion Failures**: Falls back to single-engine results if fusion fails
+5. **CC-CEDICT Failures**: Falls back to RuleBasedTranslator (276 entries) if CC-CEDICT unavailable
+6. **Dictionary Misses**: Tracks unmapped characters for expansion
+7. **MarianAdapter Failures**: Falls back to direct SentenceTranslator, then returns `None` if unavailable
+8. **QwenAdapter Failures**: Falls back to direct QwenRefiner, then to MarianMT translation, doesn't break pipeline
+9. **Timeouts**: 30-second timeout per OCR engine
+10. **Model Loading**: Lazy loading with error handling, graceful fallback if models unavailable
+11. **Token Locking Failures**: Logs warnings but continues processing (non-fatal)
+12. **Semantic Metrics Failures**: Returns default values if calculation fails (non-fatal)
 
 ---
 
@@ -718,24 +876,39 @@ The system includes comprehensive error handling at each phase:
 2. **Preprocessing**: Image upscaled, contrast enhanced, padded
 3. **EasyOCR**: Detects "我", "爱", "你" with confidences [0.92, 0.88, 0.90]
 4. **PaddleOCR**: Detects "我", "爱", "你" with confidences [0.88, 0.85, 0.92]
-5. **Alignment**: All characters aligned (IoU > 0.3 for each)
-6. **Fusion**: Creates fused positions with both candidates for each character
-7. **Selection**: Chooses highest confidence candidate for each position
-8. **Dictionary Translation**: Lookup → "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"
-9. **MarianMT Translation**: Neural translation → "I love you"
-10. **Qwen Refinement**: Refines MarianMT output → "I love you" (improved coherence, corrected any OCR noise)
-11. **Response**: Returns complete result with:
-    - Dictionary translation (character meanings)
-    - MarianMT translation (sentence-level)
-    - Qwen refined translation (enhanced)
+5. **OCR Fusion**: 
+   - Alignment: All characters aligned (IoU > 0.3 for each)
+   - Fusion: Creates fused positions with both candidates for each character
+   - Selection: Chooses highest confidence candidate (with CC-CEDICT tie-breaking if needed)
+   - Metrics: Average confidence 0.92, coverage 100.0%
+6. **CC-CEDICT Translation**: 
+   - Lookup → "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"
+   - Translation source: "CC-CEDICT"
+7. **MarianAdapter Translation**: 
+   - Token locking: All 3 glyphs locked (high confidence + dictionary match)
+   - Placeholders: `"__LOCK_我____LOCK_爱____LOCK_你__"`
+   - Neural translation → `"__LOCK_我____LOCK_爱____LOCK_你__"` → "I love you" (after restoration)
+   - Semantic metrics: confidence 0.85, tokens_locked 3, tokens_modified 0
+8. **QwenAdapter Refinement**: 
+   - Glyph-to-token mapping: Glyphs [0,1,2] → English tokens [0,1,2]
+   - Token locking: English tokens [0,1,2] locked
+   - Placeholders: `"__LOCK_T0__ __LOCK_T1__ __LOCK_T2__"`
+   - Qwen refinement → `"__LOCK_T0__ __LOCK_T1__ __LOCK_T2__!"` → "I love you!" (after restoration)
+   - Qwen metrics: qwen_confidence 0.90, tokens_locked 3, tokens_modified 1 (punctuation)
+9. **Response**: Returns complete result with:
+    - CC-CEDICT dictionary translation (character meanings)
+    - MarianAdapter translation (sentence-level with token locking)
+    - QwenAdapter refined translation (enhanced with locked tokens preserved)
     - Glyphs with meanings and confidence scores
+    - Semantic metadata (MarianAdapter metrics)
+    - Qwen metadata (QwenAdapter metrics)
 
 ---
 
 This hybrid approach provides robust, accurate OCR with comprehensive three-tier translation capabilities:
-- **Dictionary-based**: Character-level meanings for detailed understanding
-- **MarianMT**: Context-aware sentence translation for natural English
-- **Qwen Refinement**: Enhanced coherence and OCR noise correction
+- **CC-CEDICT Dictionary**: Character-level meanings (120,474 entries, 80%+ coverage) for detailed understanding
+- **MarianAdapter**: Context-aware sentence translation with semantic constraints (token locking, phrase-level refinement) for natural English
+- **QwenAdapter**: Enhanced coherence and OCR noise correction with token locking preservation and semantic confidence metrics
 
-The system preserves uncertainty information for downstream analysis while providing multiple translation perspectives for comprehensive understanding.
+The system preserves uncertainty information for downstream analysis while providing multiple translation perspectives for comprehensive understanding. All translation stages respect high-confidence OCR-decoded glyphs through token locking mechanisms, ensuring reliable preservation of dictionary-anchored meanings.
 
