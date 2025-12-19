@@ -322,22 +322,31 @@ The service provides three complementary translation methods:
    - Falls back gracefully if unavailable
 
 3. **LLM Refinement** (`refined_translation` field):
-   - Uses Qwen2.5-1.5B-Instruct model
+   - Uses Qwen2.5-1.5B-Instruct model via **QwenAdapter** (Phase 6)
+   - **Role**: Fluency and coherence optimizer under constraints
+   - **Behavior**:
+     - Respects MarianMT output and its semantic constraints (locked tokens)
+     - Improves fluency, idiomatic correctness, and context-aware refinements
+     - Never alters high-confidence OCR-decoded glyphs (propagated as locked tokens)
+   - **Token Locking**: English tokens corresponding to locked Chinese glyphs are protected with placeholders
+   - **Phrase-Level Refinement**: Identifies phrase spans for contextual processing (framework ready)
+   - **Semantic Metrics**: Provides confidence scores and change tracking via `qwen` field in API response
    - Refines MarianMT translation output
    - Corrects OCR noise-induced mistranslations
    - Improves contextual coherence and fluency
    - Preserves meaning while enhancing readability
-   - Example: MarianMT "I love you" → Qwen "I love you" (improved coherence)
+   - Example: MarianMT "I love you" → Qwen "I love you" (improved coherence, locked tokens preserved)
    - Lazy-loaded (model downloads on first use, ~3GB)
-   - Falls back to MarianMT translation if unavailable
+   - Falls back to direct QwenRefiner if adapter fails, then to MarianMT translation if unavailable
 
 ### Translation Flow
 
 1. After OCR extraction and character fusion
 2. Dictionary lookup for each character → `translation` field
-3. Neural translation of full text → `sentence_translation` field
-4. Qwen LLM refinement of MarianMT translation → `refined_translation` field
+3. Neural translation of full text via MarianAdapter → `sentence_translation` field (with token locking)
+4. Qwen LLM refinement via QwenAdapter → `refined_translation` field (with token locking preservation)
 5. All three included in response (if available)
+6. Semantic metadata included in `semantic` (MarianMT) and `qwen` (Qwen) fields
 
 ## Image Preprocessing Pipeline
 
@@ -842,6 +851,89 @@ The `MarianAdapter` (`marian_adapter.py`) wraps the existing `SentenceTranslator
    ```
 
 **Note**: This reverts to pre-Phase 5 behavior. All Phase 5 enhancements (token locking, phrase refinement, metrics) will be disabled.
+
+### Phase 6: Qwen 2.5B Refinement (December 2025)
+
+**Qwen Role Redefinition**: Qwen is refactored from a direct LLM call into a controlled, inspectable refinement engine that respects MarianMT output and semantic constraints (locked tokens).
+
+#### QwenAdapter Architecture
+
+The `QwenAdapter` (`qwen_adapter.py`) wraps the existing `QwenRefiner` to provide:
+- **Structured Input/Output**: Accepts MarianAdapterOutput + metadata, returns annotated refinement
+- **Token Locking**: English tokens corresponding to locked Chinese glyphs are protected with placeholders
+- **Phrase-Level Refinement**: Identifies phrase spans for contextual processing (framework ready)
+- **Semantic Metrics**: Tracks changes, calculates confidence scores (`qwen_confidence`)
+- **Semantic Constraints**: Enforces rules via `QwenSemanticContract` (`semantic_constraints_qwen.py`)
+
+#### Token Locking Strategy
+
+**Locking Rules**:
+- **Lock if**: English token maps to locked Chinese glyph (from MarianAdapter)
+- **Lock if**: Token corresponds to high-confidence OCR + dictionary anchor
+- **Unlock if**: Token maps to low-confidence glyph or unlocked glyph
+- **Unlock if**: Token is part of phrase-level refinement span
+
+**Placeholder System**:
+- Locked English tokens replaced with `__LOCK_T0__`, `__LOCK_T1__`, etc. before Qwen
+- Placeholders survive Qwen processing unchanged
+- Original tokens restored after Qwen refinement
+
+#### Qwen Semantic Confidence
+
+The `qwen_confidence` score (0.0-1.0) is calculated using:
+- **40% Weight**: Locked token preservation rate
+- **30% Weight**: Unlocked token stability (1 - modification_ratio)
+- **30% Weight**: Phrase-level fluency score (heuristic)
+
+#### API Response Changes
+
+**New Field**: `qwen` (optional metadata dictionary)
+- `engine`: "Qwen2.5-1.5B-Instruct"
+- `qwen_confidence`: Float (0.0-1.0)
+- `tokens_modified`: Count of modified tokens
+- `tokens_locked`: Count of locked tokens
+- `tokens_preserved`: Count of preserved tokens
+- `tokens_modified_percent`: Percentage modified
+- `tokens_locked_percent`: Percentage locked
+- `tokens_preserved_percent`: Percentage preserved
+- `phrase_spans_refined`: Count of unlocked phrase spans
+- `phrase_spans_locked`: Count of locked phrase spans
+
+#### Rollback Instructions
+
+**To disable QwenAdapter and revert to direct QwenRefiner**:
+
+1. In `main.py` (line ~370), comment out QwenAdapter initialization:
+   ```python
+   # qwen_adapter = get_qwen_adapter(qwen_refiner=qwen_refiner)
+   qwen_adapter = None
+   ```
+
+2. In `main.py` (line ~835), replace adapter call with direct refiner:
+   ```python
+   # Replace:
+   # qwen_output = qwen_adapter.translate(qwen_input)
+   # refined_translation = qwen_output.refined_text if qwen_output else None
+   
+   # With:
+   if sentence_translation and qwen_refiner and qwen_refiner.is_available():
+       refined_translation = qwen_refiner.refine_translation_with_qwen(
+           nmt_translation=sentence_translation,
+           ocr_text=full_text,
+       )
+   ```
+
+3. Remove qwen metadata extraction (line ~900):
+   ```python
+   # qwen_metadata = None  # Comment out or remove
+   ```
+
+4. Remove qwen field from InferenceResponse (line ~925):
+   ```python
+   # qwen=qwen_metadata,  # Comment out or remove
+   ```
+
+**Note**: This reverts to pre-Phase 6 behavior. All Phase 6 enhancements (token locking preservation, phrase refinement, semantic metrics) will be disabled.
 
 ### Future Enhancements
 

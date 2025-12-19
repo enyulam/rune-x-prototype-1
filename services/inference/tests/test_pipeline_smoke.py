@@ -1,13 +1,15 @@
 """
 Smoke test for Rune-X inference pipeline.
 
-This test verifies that the full OCR → translation → refinement pipeline
-executes end-to-end without crashing. It does NOT test correctness or quality.
+This test verifies that the full OCR → Dictionary → MarianAdapter → QwenAdapter → API response
+pipeline executes end-to-end without crashing. It does NOT test correctness or quality.
+
+Refactored for Phase 6: Includes comprehensive checks for all phases (3, 4, 5, 6).
 """
 
 import io
 import pytest
-from fastapi import UploadFile
+from fastapi import HTTPException
 from PIL import Image, ImageDraw
 
 # Import the endpoint function
@@ -18,17 +20,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from main import process_image, InferenceResponse
 
 
-@pytest.mark.asyncio
-async def test_pipeline_smoke():
+def create_mock_image_upload():
     """
-    Smoke test: Verify pipeline executes without crashing.
+    Create a mock image upload for testing.
     
-    Creates a minimal test image with Chinese text and verifies:
-    - Pipeline completes without exceptions
-    - Response contains expected top-level keys
-    - Graceful fallback if Qwen is unavailable
+    Returns:
+        MockUploadFile object with 400x200 white PNG image with 3 black rectangles.
     """
-    # Create a simple test image with Chinese text
+    # Create a simple test image with Chinese text simulation
     # Use a size that meets minimum requirements (50x50)
     # Make it larger and with clearer contrast for OCR
     img = Image.new('RGB', (400, 200), color='white')
@@ -48,7 +47,6 @@ async def test_pipeline_smoke():
     content = img_bytes.read()
     
     # Create UploadFile mock with proper content_type
-    # UploadFile content_type is set via headers in FastAPI, but for testing we can use a mock
     class MockUploadFile:
         def __init__(self, filename, content, content_type):
             self.filename = filename
@@ -58,43 +56,168 @@ async def test_pipeline_smoke():
         async def read(self):
             return self.file.read()
     
-    upload_file = MockUploadFile("test.png", content, "image/png")
+    return MockUploadFile("test.png", content, "image/png")
+
+
+@pytest.mark.asyncio
+async def test_pipeline_smoke_full():
+    """
+    Full pipeline smoke test: Verify end-to-end execution from OCR → Dictionary → 
+    MarianAdapter → QwenAdapter → API response.
     
-    # Run pipeline
-    # For smoke test, we catch HTTPException as valid - pipeline executed without crashing
-    from fastapi import HTTPException
+    This test verifies:
+    - Pipeline completes without crashing
+    - Required and optional fields exist in InferenceResponse
+    - Phase 3, 4, 5, 6 integration checks
+    - Type validation for all fields
+    - Graceful fallback behavior
     
+    Does NOT test translation correctness (smoke test only).
+    """
+    # Setup: Create mock input
+    upload_file = create_mock_image_upload()
+    
+    # Execution: Run full pipeline
     try:
         result = await process_image(file=upload_file)
-        
-        # If we get here, pipeline completed successfully
-        # Smoke test assertions: only check structure, not content
-        assert result is not None, "Pipeline returned None"
-        assert isinstance(result, InferenceResponse), "Result is not InferenceResponse"
-        
-        # Check required top-level fields exist
-        assert hasattr(result, 'text'), "Missing 'text' field"
-        assert hasattr(result, 'translation'), "Missing 'translation' field"
-        assert hasattr(result, 'confidence'), "Missing 'confidence' field"
-        assert hasattr(result, 'glyphs'), "Missing 'glyphs' field"
-        
-        # Check optional fields exist (may be None)
-        assert hasattr(result, 'sentence_translation'), "Missing 'sentence_translation' field"
-        assert hasattr(result, 'refined_translation'), "Missing 'refined_translation' field"
-        assert hasattr(result, 'qwen_status'), "Missing 'qwen_status' field"
-        
-        # Verify types
-        assert isinstance(result.text, str), "'text' must be string"
-        assert isinstance(result.translation, str), "'translation' must be string"
-        assert isinstance(result.confidence, (int, float)), "'confidence' must be numeric"
-        assert isinstance(result.glyphs, list), "'glyphs' must be list"
-        
     except HTTPException as e:
         # HTTPException is valid - pipeline executed, just returned expected error
         # For smoke test, we verify it's a known error type (not a crash)
-        assert e.status_code in [400, 422, 500, 503], f"Unexpected HTTPException status: {e.status_code}"
+        assert e.status_code in [400, 422, 500, 503], \
+            f"Unexpected HTTPException status: {e.status_code}"
         # Pipeline executed without crashing - smoke test passed
         return
     
+    # ========================================================================
+    # General Response Checks (All Phases)
+    # ========================================================================
+    
+    assert result is not None, "Pipeline returned None"
+    assert isinstance(result, InferenceResponse), "Result is not InferenceResponse"
+    
+    # Required fields exist
+    assert hasattr(result, 'text'), "Missing 'text' field"
+    assert hasattr(result, 'translation'), "Missing 'translation' field"
+    assert hasattr(result, 'confidence'), "Missing 'confidence' field"
+    assert hasattr(result, 'glyphs'), "Missing 'glyphs' field"
+    
+    # Type checks for required fields
+    assert isinstance(result.text, str), "'text' must be string"
+    assert isinstance(result.translation, str), "'translation' must be string"
+    assert isinstance(result.confidence, (int, float)), "'confidence' must be numeric"
+    assert isinstance(result.glyphs, list), "'glyphs' must be list"
+    
+    # ========================================================================
+    # Phase 3: MarianMT Integration Checks
+    # ========================================================================
+    
+    assert hasattr(result, 'sentence_translation'), "Missing 'sentence_translation' field"
+    if result.sentence_translation:
+        assert isinstance(result.sentence_translation, str), \
+            "'sentence_translation' must be string or None"
+    
+    # ========================================================================
+    # Phase 4: Token Locking / OCR Dictionary Anchoring Checks
+    # ========================================================================
+    
+    # Verify glyphs list exists and has expected structure
+    assert isinstance(result.glyphs, list), "'glyphs' must be list"
+    # Note: Detailed locked_tokens checks would require accessing adapter internals
+    # For smoke test, we verify the pipeline completed without crashing
+    
+    # ========================================================================
+    # Phase 5: MarianAdapter Refinement Checks
+    # ========================================================================
+    
+    assert hasattr(result, 'semantic'), "Missing 'semantic' field"
+    if result.semantic is not None:
+        semantic = result.semantic
+        assert isinstance(semantic, dict), "'semantic' must be dict or None"
+        
+        # Verify semantic_confidence exists and is in valid range
+        assert 'semantic_confidence' in semantic, \
+            "Missing 'semantic_confidence' in semantic metadata"
+        assert isinstance(semantic['semantic_confidence'], (int, float)), \
+            "'semantic_confidence' must be numeric"
+        assert 0.0 <= semantic['semantic_confidence'] <= 1.0, \
+            f"'semantic_confidence' must be in [0.0, 1.0], got {semantic['semantic_confidence']}"
+        
+        # Verify other semantic fields exist (optional, may be None)
+        expected_semantic_fields = [
+            'engine', 'tokens_modified', 'tokens_locked', 'tokens_preserved',
+            'tokens_modified_percent', 'tokens_locked_percent', 'tokens_preserved_percent',
+            'dictionary_override_count'
+        ]
+        for field in expected_semantic_fields:
+            if field in semantic:
+                # Type checks if field exists
+                if field == 'engine':
+                    assert isinstance(semantic[field], str), f"'{field}' must be string"
+                elif 'percent' in field:
+                    assert isinstance(semantic[field], (int, float)), \
+                        f"'{field}' must be numeric"
+                elif 'count' in field or 'tokens' in field:
+                    assert isinstance(semantic[field], int), f"'{field}' must be int"
+    
+    # ========================================================================
+    # Phase 6: QwenAdapter Refinement Checks
+    # ========================================================================
+    
+    # Verify refined_translation exists
+    assert hasattr(result, 'refined_translation'), "Missing 'refined_translation' field"
+    if result.refined_translation:
+        assert isinstance(result.refined_translation, str), \
+            "'refined_translation' must be string or None"
+    
+    # Verify qwen_status exists and has valid value
+    assert hasattr(result, 'qwen_status'), "Missing 'qwen_status' field"
+    assert result.qwen_status in [None, "available", "unavailable", "failed", "skipped"], \
+        f"Invalid qwen_status: {result.qwen_status}"
+    
+    # Verify qwen metadata field exists (optional, may be None)
+    assert hasattr(result, 'qwen'), "Missing 'qwen' field"
+    if result.qwen is not None:
+        qwen_meta = result.qwen
+        assert isinstance(qwen_meta, dict), "'qwen' must be dict or None"
+        
+        # Verify expected fields exist in qwen metadata
+        expected_qwen_fields = [
+            'engine', 'qwen_confidence', 'tokens_modified',
+            'tokens_locked', 'tokens_preserved',
+            'tokens_modified_percent', 'tokens_locked_percent',
+            'tokens_preserved_percent', 'phrase_spans_refined',
+            'phrase_spans_locked'
+        ]
+        
+        for field in expected_qwen_fields:
+            if field in qwen_meta:
+                # Type checks if field exists
+                if field == 'engine':
+                    assert isinstance(qwen_meta[field], str), \
+                        f"qwen['{field}'] must be string"
+                elif field == 'qwen_confidence':
+                    assert isinstance(qwen_meta[field], (int, float)), \
+                        f"qwen['{field}'] must be numeric"
+                    assert 0.0 <= qwen_meta[field] <= 1.0, \
+                        f"qwen['{field}'] must be in [0.0, 1.0], got {qwen_meta[field]}"
+                elif 'percent' in field:
+                    assert isinstance(qwen_meta[field], (int, float)), \
+                        f"qwen['{field}'] must be numeric"
+                elif 'count' in field or 'tokens' in field or 'spans' in field:
+                    assert isinstance(qwen_meta[field], int), \
+                        f"qwen['{field}'] must be int"
+    
+    # ========================================================================
+    # Backward Compatibility Checks
+    # ========================================================================
+    
+    # Verify all existing fields still present (backward compatibility)
+    assert hasattr(result, 'unmapped'), "Missing 'unmapped' field"
+    assert hasattr(result, 'coverage'), "Missing 'coverage' field"
+    assert hasattr(result, 'dictionary_source'), "Missing 'dictionary_source' field"
+    assert hasattr(result, 'dictionary_version'), "Missing 'dictionary_version' field"
+    assert hasattr(result, 'translation_source'), "Missing 'translation_source' field"
+    
     # Pipeline completed successfully - smoke test passed
+    # Note: This test does NOT verify translation correctness, only that the pipeline runs
 

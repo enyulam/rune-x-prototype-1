@@ -24,6 +24,10 @@ from qwen_refiner import get_qwen_refiner
 from cc_dictionary import CCDictionary
 from cc_translation import CCDictionaryTranslator, DefinitionStrategy
 from marian_adapter import get_marian_adapter  # Phase 5: MarianMT adapter layer
+from qwen_adapter import (  # Phase 6: Qwen adapter layer
+    get_qwen_adapter,
+    QwenAdapterInput,
+)
 
 # Import OCR fusion module
 from ocr_fusion import (
@@ -82,6 +86,7 @@ class InferenceResponse(BaseModel):
     dictionary_version: Optional[str] = None  # OCR fusion dictionary version
     translation_source: Optional[str] = None  # Translation dictionary source: "CC-CEDICT", "RuleBasedTranslator", or "Error"
     semantic: Optional[Dict[str, Any]] = None  # Phase 5 Step 7: Semantic refinement metadata (MarianMT adapter)
+    qwen: Optional[Dict[str, Any]] = None  # Phase 6 Step 7: Qwen refinement metadata (QwenAdapter)
 
 
 def _load_easyocr() -> Optional[easyocr.Reader]:
@@ -366,7 +371,7 @@ easyocr_reader = _load_easyocr()
 paddleocr_reader = _load_paddleocr()
 translator = get_translator()  # Dictionary-based translator
 sentence_translator = get_sentence_translator()  # Neural sentence translator (MarianMT) - kept for fallback
-qwen_refiner = get_qwen_refiner()  # Qwen LLM refiner
+qwen_refiner = get_qwen_refiner()  # Qwen LLM refiner (wrapped by QwenAdapter in Phase 6)
 
 # Initialize CC-CEDICT dictionary for OCR fusion tie-breaking
 # ENABLED: Provides intelligent tie-breaking when OCR engines have equal confidence
@@ -402,8 +407,11 @@ except Exception as e:
 # Must be initialized after cc_dictionary and cc_translator are available
 marian_adapter = get_marian_adapter(
     cc_dictionary=cc_dictionary,  # Phase 5 Step 4: For token locking
-    cc_translator=cc_translator  # Phase 5 Step 4: Alternative dictionary source
+    cc_translator=cc_translator,  # Phase 5 Step 4: Alternative dictionary source
 )  # Phase 5: MarianMT adapter layer (wraps sentence_translator)
+
+# Initialize QwenAdapter (Phase 6 Step 3: Wrap QwenRefiner)
+qwen_adapter = get_qwen_adapter(qwen_refiner=qwen_refiner)
 
 if easyocr_reader is None:
     logger.warning("EasyOCR not available. OCR functionality will be limited.")
@@ -425,6 +433,11 @@ if qwen_refiner is None:
     logger.warning("Qwen refiner not available. Install transformers and torch for translation refinement.")
 else:
     logger.info("Qwen refiner ready (Qwen2.5-1.5B-Instruct)")
+
+if qwen_adapter is None:
+    logger.warning("QwenAdapter not available. Phase 6 refinement will fall back to direct QwenRefiner (if available).")
+else:
+    logger.info("QwenAdapter ready (Phase 6)")
 
 
 @app.get("/health")
@@ -816,33 +829,68 @@ async def process_image(file: UploadFile = File(...)):
     else:
         logger.debug("MarianAdapter and sentence_translator not available, skipping neural translation")
     
-    # Perform Qwen refinement on MarianMT translation
+    # Perform Qwen refinement on MarianMT translation (Phase 6: via QwenAdapter)
     refined_translation = None
     qwen_status = None
+    qwen_output = None
     
-    if sentence_translation and qwen_refiner and qwen_refiner.is_available():
+    if sentence_translation and qwen_adapter and qwen_adapter.is_available():
         try:
-            logger.info("Starting Qwen refinement of MarianMT translation...")
-            refined_translation = qwen_refiner.refine_translation_with_qwen(
-                nmt_translation=sentence_translation,
-                ocr_text=full_text
+            logger.info(
+                "Phase 6: Calling QwenAdapter with structured input: %d glyphs, %d locked tokens (Chinese)",
+                len(glyphs),
+                len(adapter_output.locked_tokens) if adapter_output else 0,
             )
+            
+            # Build structured input for QwenAdapter from MarianAdapterOutput
+            qwen_input = QwenAdapterInput(
+                text=sentence_translation,
+                glyphs=glyphs,
+                locked_tokens=adapter_output.locked_tokens if adapter_output else [],
+                preserved_tokens=adapter_output.preserved_tokens if adapter_output else [],
+                changed_tokens=adapter_output.changed_tokens if adapter_output else [],
+                semantic_metadata=adapter_output.metadata if adapter_output else {},
+                ocr_text=full_text,
+            )
+            
+            qwen_output = qwen_adapter.translate(qwen_input)
+            refined_translation = qwen_output.refined_text if qwen_output else None
+            
             if refined_translation:
-                logger.info("Qwen refinement completed: %s", refined_translation[:50])
+                logger.info("Phase 6: QwenAdapter refinement completed: %s", refined_translation[:50])
                 qwen_status = "available"
             else:
-                logger.warning("Qwen refinement returned None, using MarianMT translation")
+                logger.warning("Phase 6: QwenAdapter returned None, using MarianMT translation")
                 qwen_status = "failed"
         except Exception as e:
-            logger.error("Qwen refinement failed: %s", e)
+            logger.error("Phase 6: QwenAdapter refinement failed: %s", e, exc_info=True)
             refined_translation = None
             qwen_status = "failed"
+            
+            # Fallback to direct QwenRefiner if adapter fails
+            if sentence_translation and qwen_refiner and qwen_refiner.is_available():
+                try:
+                    logger.info("Phase 6: Falling back to direct QwenRefiner...")
+                    refined_translation = qwen_refiner.refine_translation_with_qwen(
+                        nmt_translation=sentence_translation,
+                        ocr_text=full_text,
+                    )
+                    if refined_translation:
+                        logger.info("Fallback Qwen refinement completed: %s", refined_translation[:50])
+                        qwen_status = "available"
+                    else:
+                        logger.warning("Fallback Qwen refinement returned None, using MarianMT translation")
+                        qwen_status = "failed"
+                except Exception as fallback_error:
+                    logger.error("Fallback Qwen refinement also failed: %s", fallback_error, exc_info=True)
+                    refined_translation = None
+                    qwen_status = "failed"
     else:
         if not sentence_translation:
             logger.debug("No MarianMT translation available, skipping Qwen refinement")
             qwen_status = "skipped"
-        elif not qwen_refiner or not qwen_refiner.is_available():
-            logger.debug("Qwen refiner not available, skipping refinement")
+        elif not (qwen_adapter and qwen_adapter.is_available()) and not (qwen_refiner and qwen_refiner.is_available()):
+            logger.debug("QwenAdapter and QwenRefiner not available, skipping refinement")
             qwen_status = "unavailable"
     
     # Step 7 (Phase 5): Extract semantic metadata from adapter output
@@ -861,6 +909,43 @@ async def process_image(file: UploadFile = File(...)):
         }
         logger.debug("Step 7: Semantic metadata prepared for API response: %s", semantic_metadata)
     
+    # Step 7 (Phase 6): Extract Qwen metadata from QwenAdapter output
+    qwen_metadata: Optional[Dict[str, Any]] = None
+    if qwen_output and qwen_output.metadata:
+        # Basic counts and confidence
+        qwen_conf = qwen_output.qwen_confidence
+        changed_tokens = qwen_output.changed_tokens or []
+        preserved_tokens = qwen_output.preserved_tokens or []
+        locked_tokens = qwen_output.locked_tokens or []
+
+        total_tokens = len(changed_tokens) + len(preserved_tokens)
+        tokens_modified_percent = (
+            (len(changed_tokens) / total_tokens) * 100.0 if total_tokens > 0 else 0.0
+        )
+        tokens_locked_percent = (
+            (len(locked_tokens) / total_tokens) * 100.0 if total_tokens > 0 else 0.0
+        )
+        tokens_preserved_percent = (
+            (len(preserved_tokens) / total_tokens) * 100.0 if total_tokens > 0 else 0.0
+        )
+
+        meta = qwen_output.metadata or {}
+
+        qwen_metadata = {
+            "engine": "Qwen2.5-1.5B-Instruct",
+            "qwen_confidence": qwen_conf,
+            "tokens_modified": len(changed_tokens),
+            "tokens_locked": len(locked_tokens),
+            "tokens_preserved": len(preserved_tokens),
+            "tokens_modified_percent": tokens_modified_percent,
+            "tokens_locked_percent": tokens_locked_percent,
+            "tokens_preserved_percent": tokens_preserved_percent,
+            "phrase_spans_refined": meta.get("unlocked_phrases_count", 0),
+            "phrase_spans_locked": meta.get("locked_phrases_count", 0),
+        }
+
+        logger.debug("Phase 6 Step 7: Qwen metadata prepared for API response: %s", qwen_metadata)
+
     return InferenceResponse(
         text=full_text,
         translation=translation_result.get("translation", ""),  # Dictionary-based
@@ -875,4 +960,5 @@ async def process_image(file: UploadFile = File(...)):
         dictionary_version=ocr_dict_version,  # OCR fusion dictionary version
         translation_source=translation_source,  # Translation dictionary source (CC-CEDICT, RuleBasedTranslator, or Error)
         semantic=semantic_metadata,  # Phase 5 Step 7: Semantic refinement metadata (optional)
+        qwen=qwen_metadata,  # Phase 6 Step 7: Qwen refinement metadata (optional)
     )

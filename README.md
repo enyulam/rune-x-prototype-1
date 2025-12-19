@@ -28,7 +28,7 @@ The platform uses a FastAPI backend service with a **hybrid OCR system** that ru
 - **Three-Tier Translation System**: 
   - **Dictionary-Based Translation**: CC-CEDICT comprehensive dictionary with 120,474 entries for character-level meanings, traditional/simplified forms, pinyin, and multiple definitions
   - **Neural Sentence Translation**: MarianMT model via MarianAdapter (Phase 5) - Grammar and fluency optimizer that respects OCR/dictionary anchors
-  - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
+  - **LLM Refinement**: Qwen2.5-1.5B-Instruct model via QwenAdapter (Phase 6) - Fluency and coherence optimizer under constraints that preserves locked tokens
 
 **Key Features**:
 - Parallel OCR processing for faster results
