@@ -21,7 +21,7 @@ FastAPI service for Chinese handwriting OCR with hybrid OCR system, three-tier t
 - **Optimized Preprocessing**: Minimal preprocessing for handwritten text (aggressive steps disabled to preserve character integrity)
 - **Three-Tier Translation System**: 
   - **Dictionary-Based Translation**: Character-level meanings from CC-CEDICT (120,474 entries with traditional/simplified forms, pinyin, and multiple definitions)
-  - **Neural Sentence Translation**: Context-aware sentence-level translation using MarianMT (Helsinki-NLP/opus-mt-zh-en)
+  - **Neural Sentence Translation**: Grammar and fluency optimization using MarianMT (Helsinki-NLP/opus-mt-zh-en) via MarianAdapter with semantic constraints (Phase 5)
   - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
 - **CC-CEDICT Dictionary**: Comprehensive JSON-based Chinese-English dictionary with 120,474 entries including traditional/simplified forms, pinyin, and multiple English definitions per character
 - **Modular Image Preprocessing**: Production-grade preprocessing system with 13 configurable steps (8 core + 4 optional + validation), fully tested with 61 unit tests (100% pass rate), configurable via environment variables with 35+ tunable parameters
@@ -308,10 +308,16 @@ The service provides three complementary translation methods:
    - Example: "我 | 爱 | 你" → "I; me; myself; we; our | love; affection; like; care for; cherish | you; your; yourself"
 
 2. **Neural Sentence Translation** (`sentence_translation` field):
-   - Uses MarianMT model (Helsinki-NLP/opus-mt-zh-en)
-   - Processes entire sentence as context
-   - Produces natural, grammatically correct English
-   - Example: "我爱你" → "I love you"
+   - Uses MarianMT model (Helsinki-NLP/opus-mt-zh-en) via **MarianAdapter** (Phase 5)
+   - **Role**: Grammar and fluency optimizer under semantic constraints
+   - **Behavior**: 
+     - Respects OCR fusion output and CC-CEDICT dictionary anchors
+     - Improves fluency, grammar, and phrase-level meaning
+     - Never contradicts high-confidence glyph anchors (≥0.85 OCR confidence + dictionary match)
+   - **Token Locking**: High-confidence glyphs with dictionary matches are locked and preserved
+   - **Phrase-Level Refinement**: Operates at phrase-level granularity for better context handling
+   - **Semantic Metrics**: Provides confidence scores and change tracking via `semantic` field in API response
+   - Example: "我爱你" → "I love you" (with locked tokens preserved)
    - Lazy-loaded (model downloads on first use, ~300MB)
    - Falls back gracefully if unavailable
 
@@ -777,6 +783,65 @@ To change log level, modify the `logging.basicConfig()` call in `main.py`.
 - **Coherence Improvement**: Qwen enhances contextual coherence across sentences
 - **Graceful Degradation**: System works even if one translation tier is unavailable
 - **User Choice**: Users can see all three translation types and choose which to use
+
+### Phase 5: MarianMT Refactoring (December 2025)
+
+**MarianMT Role Redefinition**: MarianMT is no longer "the translator" but a **grammar and fluency optimizer** that works with the OCR + dictionary stack instead of overriding it.
+
+#### MarianAdapter Architecture
+
+The `MarianAdapter` (`marian_adapter.py`) wraps the existing `SentenceTranslator` to provide:
+- **Structured Input/Output**: Accepts glyphs + metadata, returns annotated translation
+- **Token Locking**: High-confidence glyphs (≥0.85 OCR confidence + dictionary match) are locked and preserved
+- **Phrase-Level Refinement**: Groups glyphs into phrases for better context handling
+- **Semantic Metrics**: Tracks changes, calculates confidence scores
+- **Semantic Constraints**: Enforces rules via `SemanticContract` (`semantic_constraints.py`)
+
+#### Locking Strategy
+
+**Confidence Thresholds**:
+- **High Confidence**: ≥0.85 OCR confidence → Locked (even without dictionary)
+- **High Confidence + Dictionary**: ≥0.85 OCR confidence + dictionary match → Locked
+- **Low Confidence**: <0.70 OCR confidence → Unlocked (allow MarianMT to improve)
+- **Medium Confidence**: 0.70-0.85 → Unlocked if no dictionary match
+
+**Placeholder System**:
+- Locked glyphs replaced with `__LOCK_[character]__` before MarianMT
+- Placeholders survive translation unchanged
+- Original characters restored after translation
+
+#### Rollback Instructions
+
+**To disable MarianAdapter and revert to direct MarianMT**:
+
+1. In `main.py` (line ~368), comment out MarianAdapter initialization:
+   ```python
+   # marian_adapter = get_marian_adapter(...)
+   marian_adapter = None
+   ```
+
+2. In `main.py` (line ~755), replace adapter call with direct translator:
+   ```python
+   # Replace:
+   # adapter_output = marian_adapter.translate(...)
+   # sentence_translation = adapter_output.translation if adapter_output else None
+   
+   # With:
+   if sentence_translator and sentence_translator.is_available():
+       sentence_translation = sentence_translator.translate(full_text)
+   ```
+
+3. Remove semantic metadata extraction (line ~848):
+   ```python
+   # semantic_metadata = None  # Comment out or remove
+   ```
+
+4. Remove semantic field from InferenceResponse (line ~860):
+   ```python
+   # semantic=semantic_metadata,  # Comment out or remove
+   ```
+
+**Note**: This reverts to pre-Phase 5 behavior. All Phase 5 enhancements (token locking, phrase refinement, metrics) will be disabled.
 
 ### Future Enhancements
 

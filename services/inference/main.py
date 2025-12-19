@@ -23,6 +23,7 @@ from sentence_translator import get_sentence_translator
 from qwen_refiner import get_qwen_refiner
 from cc_dictionary import CCDictionary
 from cc_translation import CCDictionaryTranslator, DefinitionStrategy
+from marian_adapter import get_marian_adapter  # Phase 5: MarianMT adapter layer
 
 # Import OCR fusion module
 from ocr_fusion import (
@@ -80,6 +81,7 @@ class InferenceResponse(BaseModel):
     dictionary_source: Optional[str] = None  # OCR fusion dictionary source: "CC-CEDICT" or "Translator"
     dictionary_version: Optional[str] = None  # OCR fusion dictionary version
     translation_source: Optional[str] = None  # Translation dictionary source: "CC-CEDICT", "RuleBasedTranslator", or "Error"
+    semantic: Optional[Dict[str, Any]] = None  # Phase 5 Step 7: Semantic refinement metadata (MarianMT adapter)
 
 
 def _load_easyocr() -> Optional[easyocr.Reader]:
@@ -363,7 +365,7 @@ def run_paddleocr(ocr_reader, img_array: np.ndarray) -> List[NormalizedOCRResult
 easyocr_reader = _load_easyocr()
 paddleocr_reader = _load_paddleocr()
 translator = get_translator()  # Dictionary-based translator
-sentence_translator = get_sentence_translator()  # Neural sentence translator (MarianMT)
+sentence_translator = get_sentence_translator()  # Neural sentence translator (MarianMT) - kept for fallback
 qwen_refiner = get_qwen_refiner()  # Qwen LLM refiner
 
 # Initialize CC-CEDICT dictionary for OCR fusion tie-breaking
@@ -395,6 +397,13 @@ except Exception as e:
     print(f"⚠️  Failed to initialize CCDictionaryTranslator: {e}. Falling back to RuleBasedTranslator.")
     logger.warning("Failed to initialize CCDictionaryTranslator: %s. Falling back to RuleBasedTranslator.", e)
     cc_translator = None
+
+# Initialize MarianAdapter (Phase 5 Step 4: Token locking enabled)
+# Must be initialized after cc_dictionary and cc_translator are available
+marian_adapter = get_marian_adapter(
+    cc_dictionary=cc_dictionary,  # Phase 5 Step 4: For token locking
+    cc_translator=cc_translator  # Phase 5 Step 4: Alternative dictionary source
+)  # Phase 5: MarianMT adapter layer (wraps sentence_translator)
 
 if easyocr_reader is None:
     logger.warning("EasyOCR not available. OCR functionality will be limited.")
@@ -721,9 +730,82 @@ async def process_image(file: UploadFile = File(...)):
     logger.info("Extracted OCR text (first 200 chars): %s", full_text[:200] if full_text else "Empty")
     logger.info("Extracted OCR text length: %d characters", len(full_text))
     
-    # Perform sentence-level neural translation (MarianMT)
+    # Phase 5: Perform sentence-level neural translation (MarianMT) via adapter
+    # Build canonical input string from glyphs preserving token boundaries
+    # Verify glyph order matches full_text order
+    canonical_text_from_glyphs = "".join(g.symbol for g in glyphs)
+    if canonical_text_from_glyphs != full_text:
+        logger.warning(
+            "Glyph order mismatch: glyph text (%d chars) != full_text (%d chars). "
+            "Using full_text for canonical input.",
+            len(canonical_text_from_glyphs), len(full_text)
+        )
+        logger.debug("Glyph text: %s", canonical_text_from_glyphs[:100])
+        logger.debug("Full text: %s", full_text[:100])
+    else:
+        logger.debug(
+            "Glyph order verified: %d glyphs match %d characters in full_text",
+            len(glyphs), len(full_text)
+        )
+    
     sentence_translation = None
-    if sentence_translator and sentence_translator.is_available():
+    adapter_output = None
+    
+    # Phase 5: Use MarianAdapter instead of direct sentence_translator call
+    if marian_adapter and marian_adapter.is_available():
+        try:
+            logger.info(
+                "Phase 5: Calling MarianAdapter with structured input: "
+                "%d glyphs, confidence=%.2f, dictionary_coverage=%.1f%%",
+                len(glyphs), ocr_confidence, ocr_coverage
+            )
+            
+            # Build structured input preserving token boundaries
+            adapter_output = marian_adapter.translate(
+                glyphs=glyphs,
+                confidence=ocr_confidence,
+                dictionary_coverage=ocr_coverage,
+                locked_tokens=None,  # Step 4 (Phase 5): Auto-populated by adapter using semantic contract
+                raw_text=full_text  # Use full_text to ensure consistency
+            )
+            
+            sentence_translation = adapter_output.translation if adapter_output else None
+            
+            logger.info(
+                "Phase 5: MarianAdapter translation completed: %s",
+                sentence_translation[:200] if sentence_translation else "None"
+            )
+            
+            # Debug logging: Confirm no data loss
+            if adapter_output:
+                logger.debug(
+                    "Phase 5: Adapter output metadata: %s",
+                    adapter_output.metadata
+                )
+                logger.debug(
+                    "Phase 5: Locked tokens: %d, Changed tokens: %d, Preserved tokens: %d",
+                    len(adapter_output.locked_tokens),
+                    len(adapter_output.changed_tokens),
+                    len(adapter_output.preserved_tokens)
+                )
+            
+        except Exception as e:
+            logger.error("Phase 5: MarianAdapter translation failed: %s", e, exc_info=True)
+            sentence_translation = None
+            adapter_output = None
+            
+            # Fallback to direct sentence_translator if adapter fails
+            logger.info("Falling back to direct sentence_translator...")
+            if sentence_translator and sentence_translator.is_available():
+                try:
+                    sentence_translation = sentence_translator.translate(full_text)
+                    logger.info("Fallback translation completed")
+                except Exception as fallback_error:
+                    logger.error("Fallback translation also failed: %s", fallback_error)
+                    sentence_translation = None
+    elif sentence_translator and sentence_translator.is_available():
+        # Fallback: Use direct sentence_translator if adapter not available
+        logger.debug("MarianAdapter not available, using direct sentence_translator (fallback)")
         try:
             logger.info("Calling MarianMT translator with text: %s", full_text[:100] if full_text else "Empty")
             sentence_translation = sentence_translator.translate(full_text)
@@ -732,7 +814,7 @@ async def process_image(file: UploadFile = File(...)):
             logger.error("Sentence translation failed: %s", e)
             sentence_translation = None
     else:
-        logger.debug("Sentence translator not available, skipping neural translation")
+        logger.debug("MarianAdapter and sentence_translator not available, skipping neural translation")
     
     # Perform Qwen refinement on MarianMT translation
     refined_translation = None
@@ -763,6 +845,22 @@ async def process_image(file: UploadFile = File(...)):
             logger.debug("Qwen refiner not available, skipping refinement")
             qwen_status = "unavailable"
     
+    # Step 7 (Phase 5): Extract semantic metadata from adapter output
+    semantic_metadata = None
+    if adapter_output and adapter_output.metadata:
+        semantic_metadata = {
+            "engine": "MarianMT",
+            "semantic_confidence": adapter_output.semantic_confidence,
+            "tokens_modified": len(adapter_output.changed_tokens),
+            "tokens_locked": len(adapter_output.locked_tokens),
+            "tokens_preserved": len(adapter_output.preserved_tokens),
+            "tokens_modified_percent": adapter_output.metadata.get("tokens_modified_percent", 0.0),
+            "tokens_locked_percent": adapter_output.metadata.get("tokens_locked_percent", 0.0),
+            "tokens_preserved_percent": adapter_output.metadata.get("tokens_preserved_percent", 0.0),
+            "dictionary_override_count": adapter_output.metadata.get("dictionary_override_count", 0),
+        }
+        logger.debug("Step 7: Semantic metadata prepared for API response: %s", semantic_metadata)
+    
     return InferenceResponse(
         text=full_text,
         translation=translation_result.get("translation", ""),  # Dictionary-based
@@ -775,5 +873,6 @@ async def process_image(file: UploadFile = File(...)):
         coverage=ocr_coverage,  # OCR fusion dictionary coverage (0.0-100.0 percentage)
         dictionary_source=ocr_dict_source,  # OCR fusion dictionary source (CC-CEDICT or Translator)
         dictionary_version=ocr_dict_version,  # OCR fusion dictionary version
-        translation_source=translation_source  # Translation dictionary source (CC-CEDICT, RuleBasedTranslator, or Error)
+        translation_source=translation_source,  # Translation dictionary source (CC-CEDICT, RuleBasedTranslator, or Error)
+        semantic=semantic_metadata,  # Phase 5 Step 7: Semantic refinement metadata (optional)
     )

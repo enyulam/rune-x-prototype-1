@@ -9,6 +9,16 @@ REM Get the script directory (project root)
 set SCRIPT_DIR=%~dp0
 set BACKEND_DIR=%SCRIPT_DIR%services\inference
 
+REM Activate virtual environment
+if exist "%SCRIPT_DIR%venv\Scripts\activate.bat" (
+    echo Activating virtual environment...
+    call "%SCRIPT_DIR%venv\Scripts\activate.bat"
+) else (
+    echo WARNING: Virtual environment not found at %SCRIPT_DIR%venv\Scripts\activate.bat
+    echo Continuing with system Python...
+)
+echo.
+
 REM Check if backend directory exists
 if not exist "%BACKEND_DIR%" (
     echo ERROR: Backend directory not found: %BACKEND_DIR%
