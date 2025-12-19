@@ -139,6 +139,108 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### ✅ Completed - Phase 5: MarianMT Refactoring (All 10 Steps Complete)
+
+**Project Goal**: Refactor MarianMT from a black-box translator into a controlled, inspectable, dictionary-anchored semantic module that works with the OCR + dictionary stack instead of overriding it.
+
+**Status**: 🎉 **COMPLETE & PRODUCTION-READY**
+
+#### **Step 1: Define MarianMT Semantic Contract** ✅
+- Created `services/inference/semantic_constraints.py` (500+ lines)
+- Defined `SemanticContract` class with explicit rules
+- Defined confidence thresholds (OCR_HIGH_CONFIDENCE=0.85, OCR_MEDIUM_CONFIDENCE=0.70)
+- Documented MarianMT role as grammar/phrasing optimizer under constraints
+- Created `TokenLockStatus` dataclass for lock status tracking
+
+#### **Step 2: Create MarianAdapter Layer** ✅
+- Created `services/inference/marian_adapter.py` (700+ lines)
+- Wraps existing `SentenceTranslator` without modifying it
+- Accepts structured input: `MarianAdapterInput` (glyphs, confidence, dictionary_coverage, locked_tokens, raw_text)
+- Returns annotated output: `MarianAdapterOutput` (translation, changed_tokens, preserved_tokens, semantic_confidence, metadata)
+- Includes logging hooks and error handling
+
+#### **Step 3: Refactor MarianMT Invocation in main.py** ✅
+- Replaced direct `sentence_translator.translate(full_text)` call with `marian_adapter.translate()`
+- Added glyph order verification
+- Built canonical input string from glyphs preserving token boundaries
+- Added fallback mechanism to direct translator if adapter fails
+- Verified no data loss with comprehensive logging
+
+#### **Step 4: Implement Dictionary-Anchored Token Locking** ✅
+- Implemented `_identify_locked_tokens()`: Identifies locked glyphs using OCR confidence (≥0.85) AND dictionary match
+- Implemented `_replace_locked_with_placeholders()`: Replaces locked glyphs with `__LOCK_[character]__` placeholders
+- Implemented `_restore_locked_tokens()`: Restores original characters after translation
+- Placeholders survive MarianMT translation unchanged
+- Created 14 unit tests for token locking (all passing)
+
+#### **Step 5: Phrase-Level Semantic Refinement** ✅
+- Created `PhraseSpan` dataclass for phrase representation
+- Implemented `_identify_phrase_spans()`: Groups glyphs into contiguous phrases
+- Implemented `_refine_phrases()`: Structure for phrase-level translation (foundation for future enhancement)
+- Added debug output showing phrase boundaries
+- Created 7 unit tests for phrase-level refinement (all passing)
+
+#### **Step 6: Add Semantic Confidence Metrics** ✅
+- Implemented `_calculate_semantic_metrics()`: Computes comprehensive metrics
+- Metrics: tokens_modified_percent, tokens_locked_percent, tokens_preserved_percent, semantic_confidence, dictionary_override_count
+- Semantic confidence heuristic: Combines locked preservation rate, modification ratio, dictionary coverage, locked token percentage
+- Metrics exposed in adapter output metadata
+- Created 6 unit tests for semantic metrics (all passing)
+
+#### **Step 7: Update API Response Schema (Non-Breaking)** ✅
+- Added `semantic: Optional[Dict[str, Any]]` field to `InferenceResponse`
+- Extracts semantic metadata from adapter output
+- Includes: engine, semantic_confidence, tokens_modified, tokens_locked, tokens_preserved, percentages, dictionary_override_count
+- Maintains backward compatibility (field is optional, None by default)
+- Created 4 backward compatibility tests (all passing)
+
+#### **Step 8: Unit & Integration Tests** ✅
+- Expanded test suite to 40 tests total (36 in test_marian_adapter.py + 4 in test_api_backward_compatibility.py)
+- Added comprehensive integration tests:
+  - Locked token preservation (2 tests)
+  - MarianMT fluency improvement (2 tests)
+  - OCR/dictionary authority (2 tests)
+  - Fallback behavior (3 tests)
+- All 40 tests passing
+
+#### **Step 9: Pipeline Smoke Tests** ✅
+- Executed smoke tests after Steps 3, 4, 5, and 8
+- All smoke tests passing:
+  - Step 3: ~16s (after MarianAdapter introduction)
+  - Step 4: 16.60s (after token locking)
+  - Step 5: 24.25s (after phrase-level refinement)
+  - Step 8: 14.11s (after comprehensive integration)
+- Verified: No regressions, API structure intact, performance acceptable
+
+#### **Step 10: Documentation & Phase 5 Sign-off** ✅
+- Updated `services/inference/README.md` with MarianMT role redefinition
+- Updated `README.md` with Phase 5 changes
+- Documented adapter architecture and locking strategy
+- Added rollback instructions
+- Updated `CHANGELOG.md` with Phase 5 summary
+- Created `PHASE5_MARIANMT_REFACTOR.md` with complete documentation
+
+**Impact Summary**:
+- **MarianMT Role**: Changed from "primary translator" to "grammar optimizer under constraints"
+- **Token Locking**: High-confidence glyphs (≥0.85) with dictionary matches are preserved
+- **Phrase-Level Refinement**: Structure in place for phrase-level translation
+- **Semantic Metrics**: Comprehensive metrics exposed via API
+- **API Enhancement**: New `semantic` field (backward compatible)
+- **Test Coverage**: 40 tests (exceeds 20 test target)
+- **Backward Compatibility**: ✅ Maintained (all fields optional)
+- **Production Ready**: ✅ All tests passing, comprehensive logging
+
+**Files Created/Modified**:
+- `semantic_constraints.py` (500+ lines) - NEW
+- `marian_adapter.py` (700+ lines) - NEW
+- `tests/test_marian_adapter.py` (900+ lines, 36 tests) - NEW/EXPANDED
+- `tests/test_api_backward_compatibility.py` (100+ lines, 4 tests) - NEW
+- `main.py` - Updated (MarianAdapter integration, semantic metadata)
+- `PHASE5_SUMMARY.md` (900+ lines) - NEW
+- Various smoke test result documents - NEW
+
+---
+
 **Known Non-Critical Warnings**:
 - PyTorch deprecation: `torch.ao.quantization` (EasyOCR/PyTorch upstream)
 - PaddleOCR deprecation: `use_angle_cls` parameter (use `use_textline_orientation` in future)

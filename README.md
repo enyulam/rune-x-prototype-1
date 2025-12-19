@@ -27,7 +27,7 @@ The platform uses a FastAPI backend service with a **hybrid OCR system** that ru
 - **Modular Image Preprocessing**: Production-grade 13-step preprocessing pipeline with two-tier architecture (8 core + 4 optional + validation), fully configurable via environment variables, comprehensively tested with 61 unit tests
 - **Three-Tier Translation System**: 
   - **Dictionary-Based Translation**: CC-CEDICT comprehensive dictionary with 120,474 entries for character-level meanings, traditional/simplified forms, pinyin, and multiple definitions
-  - **Neural Sentence Translation**: MarianMT model for context-aware, natural English sentence translation
+  - **Neural Sentence Translation**: MarianMT model via MarianAdapter (Phase 5) - Grammar and fluency optimizer that respects OCR/dictionary anchors
   - **LLM Refinement**: Qwen2.5-1.5B-Instruct model for refining translations, correcting OCR noise, and improving coherence
 
 **Key Features**:
