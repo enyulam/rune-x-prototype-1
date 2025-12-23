@@ -318,8 +318,6 @@ Phase 6 is complete when:
 
 Once Phase 6 is complete, you can move to:
 - **Phase 7**: Enhanced features (batch processing, progress indicators)
-- **Phase 8**: Model improvements (better accuracy, more characters)
-- **Phase 9**: Production readiness (monitoring, optimization)
 
 ---
 

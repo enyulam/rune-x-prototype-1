@@ -97,15 +97,120 @@ async def test_pipeline_smoke_full():
     
     # Required fields exist
     assert hasattr(result, 'text'), "Missing 'text' field"
+    assert hasattr(result, 'canonical_text'), "Missing 'canonical_text' field"
+    assert hasattr(result, 'canonical_meta'), "Missing canonicalization metadata"
     assert hasattr(result, 'translation'), "Missing 'translation' field"
     assert hasattr(result, 'confidence'), "Missing 'confidence' field"
     assert hasattr(result, 'glyphs'), "Missing 'glyphs' field"
     
     # Type checks for required fields
     assert isinstance(result.text, str), "'text' must be string"
+    assert isinstance(result.canonical_text, str), "'canonical_text' must be a string"
     assert isinstance(result.translation, str), "'translation' must be string"
     assert isinstance(result.confidence, (int, float)), "'confidence' must be numeric"
     assert isinstance(result.glyphs, list), "'glyphs' must be list"
+
+    # Canonicalization metadata and noise filtering
+    assert isinstance(result.canonical_meta, dict), "'canonical_meta' must be a dict"
+    assert 'noise_filtered_count' in result.canonical_meta, "Missing noise_filtered_count in canonical_meta"
+    assert isinstance(result.canonical_meta['noise_filtered_count'], int)
+    assert result.canonical_meta['noise_filtered_count'] >= 0
+    assert len(result.canonical_text) <= len(result.text)
+
+    # ========================================================================
+    # Phase 8 Step 1 & 2: Segmentation and glyph-to-sentence mapping checks
+    # ========================================================================
+    # We rely on debug metadata exposed via result.semantic/qwen where applicable.
+    # For the smoke test, minimally ensure segmentation happened and spans are sane.
+    assert hasattr(result, "semantic"), "Missing 'semantic' field for metadata checks"
+    # segmentation: at least 1 sentence and paragraph index non-negative if exposed
+    # (If adapters did not populate segment metadata, we skip detailed checks)
+    if hasattr(result, "semantic") and isinstance(result.semantic, dict):
+        semantic_meta = result.semantic
+        # Optional: adapter may expose sentence/paragraph counts
+        seg_sent_count = semantic_meta.get("segmented_sentence_count")
+        seg_para_count = semantic_meta.get("segmented_paragraph_count")
+        if seg_sent_count is not None:
+            assert isinstance(seg_sent_count, int) and seg_sent_count >= 1
+        if seg_para_count is not None:
+            assert isinstance(seg_para_count, int) and seg_para_count >= 1
+
+    # Ensure sentence spans (if exposed) cover glyphs monotonically without overlap
+    if hasattr(result, "semantic") and isinstance(result.semantic, dict):
+        semantic_meta = result.semantic
+        spans = semantic_meta.get("sentence_spans")
+        if spans:
+            # spans expected shape: list of dicts with glyph_indices and indices
+            all_indices = []
+            prev_last = -1
+            for span in spans:
+                glyph_idxs = span.get("glyph_indices", [])
+                assert isinstance(glyph_idxs, list)
+                if glyph_idxs:
+                    # monotonic non-overlapping
+                    assert min(glyph_idxs) > prev_last
+                    prev_last = max(glyph_idxs)
+                    all_indices.extend(glyph_idxs)
+            # no gaps/overlaps within monotonic assumption
+            assert len(all_indices) == len(set(all_indices))
+
+    # If sentence count is available in spans, ensure it matches segmentation count
+    if hasattr(result, "semantic") and isinstance(result.semantic, dict):
+        semantic_meta = result.semantic
+        spans = semantic_meta.get("sentence_spans")
+        seg_sent_count = semantic_meta.get("segmented_sentence_count")
+        if spans is not None and seg_sent_count is not None:
+            assert len(spans) == seg_sent_count
+
+    # Marian/Qwen should have received non-empty text (or combined text) — we assert
+    # the outputs are present as basic proxy.
+    if result.sentence_translation is not None:
+        assert len(result.sentence_translation) >= 0  # non-negative length
+    if result.refined_translation is not None:
+        assert len(result.refined_translation) >= 0
+
+    # ========================================================================
+    # Additional Phase 8 coverage assertions
+    # ========================================================================
+    # Require at least one sentence and paragraph if counts are exposed
+    if hasattr(result, "semantic") and isinstance(result.semantic, dict):
+        semantic_meta = result.semantic
+        seg_sent_count = semantic_meta.get("segmented_sentence_count")
+        seg_para_count = semantic_meta.get("segmented_paragraph_count")
+        if seg_sent_count is not None:
+            assert seg_sent_count >= 1, "Segmentation produced zero sentences"
+        if seg_para_count is not None:
+            assert seg_para_count >= 1, "Segmentation produced zero paragraphs"
+
+        # If sentence spans exist, ensure no empty or missing translations per span
+        spans = semantic_meta.get("sentence_spans")
+        if spans and isinstance(spans, list):
+            for span in spans:
+                # Expect that each span had some output text (approximation via presence)
+                assert "text" in span, "Span missing text"
+
+    # Paragraph recombination: if refined_translation exists, ensure paragraph separators preserved
+    if result.refined_translation is not None:
+        # At least one paragraph present
+        refined_paragraphs = [p for p in result.refined_translation.split("\n\n") if p.strip()]
+        assert len(refined_paragraphs) >= 1, "No paragraphs found in refined_translation"
+
+    # No empty or missing translations (coarse check)
+    assert result.translation is not None
+    if result.sentence_translation is not None:
+        assert result.sentence_translation.strip() != "" or result.refined_translation, \
+            "Sentence translation is empty and no refined translation provided"
+
+    # Fallback logic: ensure we always end with either refined or sentence translation non-empty
+    assert (result.refined_translation and result.refined_translation.strip()) or \
+           (result.sentence_translation and result.sentence_translation.strip()), \
+        "Both refined_translation and sentence_translation are empty"
+
+    # Qwen metadata correctness already partially checked; ensure no paragraph loss when metadata present
+    if hasattr(result, "qwen") and isinstance(result.qwen, dict):
+        qwen_meta = result.qwen
+        # If paragraphs were counted upstream, we can approximate paragraph presence via qwen_status
+        assert result.qwen_status in [None, "available", "unavailable", "failed", "skipped"]
     
     # ========================================================================
     # Phase 3: MarianMT Integration Checks

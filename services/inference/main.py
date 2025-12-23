@@ -8,6 +8,7 @@ Run with:
 
 import io
 import logging
+import re
 from typing import List, Optional, Tuple, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
 
@@ -28,6 +29,8 @@ from qwen_adapter import (  # Phase 6: Qwen adapter layer
     get_qwen_adapter,
     QwenAdapterInput,
 )
+from text_segmentation import segment_text_into_units  # Phase 8: Chinese segmentation
+from sentence_mapping import build_sentence_spans  # Phase 8: Glyph-to-sentence mapping
 
 # Import OCR fusion module
 from ocr_fusion import (
@@ -87,6 +90,8 @@ class InferenceResponse(BaseModel):
     translation_source: Optional[str] = None  # Translation dictionary source: "CC-CEDICT", "RuleBasedTranslator", or "Error"
     semantic: Optional[Dict[str, Any]] = None  # Phase 5 Step 7: Semantic refinement metadata (MarianMT adapter)
     qwen: Optional[Dict[str, Any]] = None  # Phase 6 Step 7: Qwen refinement metadata (QwenAdapter)
+    canonical_text: Optional[str] = None  # Phase 8 Step 0: Canonical OCR text after noise filtering
+    canonical_meta: Optional[Dict[str, Any]] = None  # Phase 8 Step 0: Canonicalization metadata
 
 
 def _load_easyocr() -> Optional[easyocr.Reader]:
@@ -140,6 +145,52 @@ def _load_paddleocr():
         import traceback
         logger.debug(traceback.format_exc())
         return None
+
+
+def _canonicalize_ocr_text_and_filter_noise(
+    glyphs: List[Glyph],
+    full_text: str,
+) -> Tuple[str, Dict[str, Any]]:
+    """
+    Build a canonical OCR text string and apply lightweight noise filtering.
+
+    - Prefers the fused `full_text` produced by `ocr_fusion` (which already
+      encodes reading order and line/paragraph breaks).
+    - Falls back to concatenating glyph symbols if `full_text` is empty.
+    - Strips obvious trailing non-Chinese noise (IDs, ASCII tails, etc.) while
+      avoiding aggressive modification of the main content.
+    """
+    glyph_text = "".join(g.symbol for g in glyphs) if glyphs else ""
+    base_text = full_text if full_text and full_text.strip() else glyph_text
+
+    metadata: Dict[str, Any] = {
+        "original_full_text_length": len(full_text or ""),
+        "glyph_text_length": len(glyph_text),
+        "chosen_source": "full_text" if full_text and full_text.strip() else "glyph_text",
+        "trailing_noise_removed": 0,
+    }
+
+    # Simple trailing-noise filter:
+    # - Removes trailing whitespace, digits, ASCII letters and a few symbols
+    #   that commonly appear in watermarks / IDs (e.g., 608806744T#)
+    # - If this would wipe out the entire string, we keep the original.
+    trailing_noise_pattern = re.compile(r"[\s0-9A-Za-z#@]+$")
+    cleaned_text = trailing_noise_pattern.sub("", base_text)
+
+    if cleaned_text.strip():
+        metadata["trailing_noise_removed"] = len(base_text) - len(cleaned_text)
+    else:
+        # Avoid over-filtering: fall back to the unmodified base_text
+        cleaned_text = base_text
+        metadata["trailing_noise_removed"] = 0
+
+    if metadata["trailing_noise_removed"] > 0:
+        logger.info(
+            "Canonical OCR text: removed %d trailing noise characters (likely watermark/ID tail).",
+            metadata["trailing_noise_removed"],
+        )
+
+    return cleaned_text, metadata
 
 
 # ============================================================================
@@ -625,7 +676,30 @@ async def process_image(file: UploadFile = File(...)):
         glyphs, full_text, ocr_confidence, ocr_coverage = fuse_character_candidates(
             fused_positions, translator=fusion_dictionary
         )
+
+        # Phase 8 Step 0: Canonicalize OCR text and apply lightweight noise filtering
+        full_text, canonical_meta = _canonicalize_ocr_text_and_filter_noise(
+            glyphs=glyphs,
+            full_text=full_text,
+        )
         
+        # Phase 8 Step 1: segment canonical text into paragraphs/sentences (for future per-sentence pipeline)
+        segmented_units = segment_text_into_units(full_text)
+        logger.info(
+            "Phase 8 Step 1: Segmented text into %d sentences across %d paragraph(s)",
+            len(segmented_units),
+            (segmented_units[-1].paragraph_index + 1) if segmented_units else 0,
+        )
+
+        sentence_spans, span_warnings = build_sentence_spans(glyphs, segmented_units)
+        if span_warnings:
+            logger.warning("Phase 8 Step 2: %d sentence mapping warning(s)", len(span_warnings))
+        logger.info(
+            "Phase 8 Step 2: Built %d sentence span(s) covering %d glyph(s)",
+            len(sentence_spans),
+            sum(len(s.glyph_indices) for s in sentence_spans),
+        )
+
         # Capture dictionary metadata for API response
         if fusion_dictionary == cc_dictionary and cc_dictionary is not None:
             # Using CC-CEDICT
@@ -739,13 +813,13 @@ async def process_image(file: UploadFile = File(...)):
         len(enriched_glyphs), ocr_confidence * 100, ocr_coverage
     )
     
-    # Log the extracted OCR text for debugging
+    # Log the extracted OCR text for debugging (after canonicalization / noise filtering)
     logger.info("Extracted OCR text (first 200 chars): %s", full_text[:200] if full_text else "Empty")
     logger.info("Extracted OCR text length: %d characters", len(full_text))
     
     # Phase 5: Perform sentence-level neural translation (MarianMT) via adapter
     # Build canonical input string from glyphs preserving token boundaries
-    # Verify glyph order matches full_text order
+    # Verify glyph order matches canonical full_text order
     canonical_text_from_glyphs = "".join(g.symbol for g in glyphs)
     if canonical_text_from_glyphs != full_text:
         logger.warning(
@@ -763,6 +837,7 @@ async def process_image(file: UploadFile = File(...)):
     
     sentence_translation = None
     adapter_output = None
+    per_sentence_outputs = None  # Phase 8 Step 3: optional per-sentence Marian outputs
     
     # Phase 5: Use MarianAdapter instead of direct sentence_translator call
     if marian_adapter and marian_adapter.is_available():
@@ -779,7 +854,7 @@ async def process_image(file: UploadFile = File(...)):
                 confidence=ocr_confidence,
                 dictionary_coverage=ocr_coverage,
                 locked_tokens=None,  # Step 4 (Phase 5): Auto-populated by adapter using semantic contract
-                raw_text=full_text  # Use full_text to ensure consistency
+                raw_text=full_text  # Use canonical full_text to ensure consistency
             )
             
             sentence_translation = adapter_output.translation if adapter_output else None
@@ -801,6 +876,47 @@ async def process_image(file: UploadFile = File(...)):
                     len(adapter_output.changed_tokens),
                     len(adapter_output.preserved_tokens)
                 )
+
+            # Phase 8 Step 3: Per-sentence MarianMT translation for coverage
+            if sentence_spans:
+                per_sentence_outputs = []
+                from collections import defaultdict
+
+                paragraphs: Dict[int, list] = defaultdict(list)
+                for span in sentence_spans:
+                    span_glyphs = [glyphs[i] for i in span.glyph_indices] if span.glyph_indices else []
+                    try:
+                        span_output = marian_adapter.translate(
+                            glyphs=span_glyphs or glyphs,
+                            confidence=ocr_confidence,
+                            dictionary_coverage=ocr_coverage,
+                            locked_tokens=None,
+                            raw_text=span.text,
+                        )
+                    except Exception as span_err:  # noqa: F841
+                        logger.warning(
+                            "Phase 8 Step 3: MarianAdapter per-sentence call failed for %d:%d, using raw text. Error: %s",
+                            span.paragraph_index,
+                            span.sentence_index,
+                            span_err,
+                        )
+                        span_output = None
+
+                    per_sentence_outputs.append((span, span_output))
+                    # Use translated sentence if available, else fall back to original Chinese sentence
+                    out_text = (
+                        span_output.translation
+                        if span_output and getattr(span_output, "translation", None)
+                        else span.text
+                    )
+                    paragraphs[span.paragraph_index].append(out_text)
+
+                # Recombine into paragraph-then-sentence ordered text
+                ordered_paragraph_indices = sorted(paragraphs.keys())
+                recombined_paragraphs = [
+                    "".join(paragraphs[p_idx]) for p_idx in ordered_paragraph_indices
+                ]
+                sentence_translation = "\n\n".join(recombined_paragraphs)
             
         except Exception as e:
             logger.error("Phase 5: MarianAdapter translation failed: %s", e, exc_info=True)
@@ -832,35 +948,47 @@ async def process_image(file: UploadFile = File(...)):
     # Perform Qwen refinement on MarianMT translation (Phase 6: via QwenAdapter)
     refined_translation = None
     qwen_status = None
-    qwen_output = None
+    qwen_outputs = []  # Phase 8 Step 4: per-paragraph Qwen outputs
     
     if sentence_translation and qwen_adapter and qwen_adapter.is_available():
         try:
+            # Phase 8 Step 4: refine per paragraph to bound Qwen's scope
+            paragraphs = [p for p in sentence_translation.split("\n\n") if p.strip()]
+            refined_paragraphs: List[str] = []
+
             logger.info(
-                "Phase 6: Calling QwenAdapter with structured input: %d glyphs, %d locked tokens (Chinese)",
+                "Phase 8 Step 4: Calling QwenAdapter per paragraph: %d paragraph(s), %d glyphs, %d locked tokens (Chinese)",
+                len(paragraphs),
                 len(glyphs),
                 len(adapter_output.locked_tokens) if adapter_output else 0,
             )
-            
-            # Build structured input for QwenAdapter from MarianAdapterOutput
-            qwen_input = QwenAdapterInput(
-                text=sentence_translation,
-                glyphs=glyphs,
-                locked_tokens=adapter_output.locked_tokens if adapter_output else [],
-                preserved_tokens=adapter_output.preserved_tokens if adapter_output else [],
-                changed_tokens=adapter_output.changed_tokens if adapter_output else [],
-                semantic_metadata=adapter_output.metadata if adapter_output else {},
-                ocr_text=full_text,
-            )
-            
-            qwen_output = qwen_adapter.translate(qwen_input)
-            refined_translation = qwen_output.refined_text if qwen_output else None
-            
-            if refined_translation:
-                logger.info("Phase 6: QwenAdapter refinement completed: %s", refined_translation[:50])
+
+            for idx, para in enumerate(paragraphs):
+                qwen_input = QwenAdapterInput(
+                    text=para,
+                    glyphs=glyphs,
+                    locked_tokens=adapter_output.locked_tokens if adapter_output else [],
+                    preserved_tokens=adapter_output.preserved_tokens if adapter_output else [],
+                    changed_tokens=adapter_output.changed_tokens if adapter_output else [],
+                    semantic_metadata=adapter_output.metadata if adapter_output else {},
+                    ocr_text=full_text,
+                )
+                para_output = qwen_adapter.translate(qwen_input)
+                qwen_outputs.append(para_output)
+
+                refined_para = para_output.refined_text if para_output and para_output.refined_text else para
+                refined_paragraphs.append(refined_para)
+
+            if refined_paragraphs:
+                refined_translation = "\n\n".join(refined_paragraphs)
+                logger.info(
+                    "Phase 8 Step 4: QwenAdapter per-paragraph refinement completed (len=%d)",
+                    len(refined_translation),
+                )
                 qwen_status = "available"
             else:
-                logger.warning("Phase 6: QwenAdapter returned None, using MarianMT translation")
+                logger.warning("Phase 8 Step 4: QwenAdapter produced no paragraphs, using MarianMT translation")
+                refined_translation = sentence_translation
                 qwen_status = "failed"
         except Exception as e:
             logger.error("Phase 6: QwenAdapter refinement failed: %s", e, exc_info=True)
@@ -893,7 +1021,7 @@ async def process_image(file: UploadFile = File(...)):
             logger.debug("QwenAdapter and QwenRefiner not available, skipping refinement")
             qwen_status = "unavailable"
     
-    # Step 7 (Phase 5): Extract semantic metadata from adapter output
+    # Step 7 (Phase 5 + Phase 8 Step 5): Extract semantic metadata from adapter output
     semantic_metadata = None
     if adapter_output and adapter_output.metadata:
         semantic_metadata = {
@@ -907,44 +1035,103 @@ async def process_image(file: UploadFile = File(...)):
             "tokens_preserved_percent": adapter_output.metadata.get("tokens_preserved_percent", 0.0),
             "dictionary_override_count": adapter_output.metadata.get("dictionary_override_count", 0),
         }
+
+        # Phase 8 Step 5: add segmentation and span coverage metadata
+        if segmented_units is not None:
+            semantic_metadata["segmented_sentence_count"] = len(segmented_units)
+            semantic_metadata["segmented_paragraph_count"] = (
+                segmented_units[-1].paragraph_index + 1 if segmented_units else 0
+            )
+        if sentence_spans:
+            spans_meta = []
+            for s in sentence_spans:
+                spans_meta.append(
+                    {
+                        "paragraph_index": s.paragraph_index,
+                        "sentence_index": s.sentence_index,
+                        "glyph_indices": s.glyph_indices,
+                        "matched": s.matched,
+                        "text_length": len(s.text),
+                    }
+                )
+            semantic_metadata["sentence_spans"] = spans_meta
+        if per_sentence_outputs is not None:
+            # Track which sentences had translations and which fell back to source
+            translated_flags = []
+            for span, out in per_sentence_outputs:
+                translated_flags.append(
+                    {
+                        "paragraph_index": span.paragraph_index,
+                        "sentence_index": span.sentence_index,
+                        "translated": bool(out and getattr(out, "translation", None)),
+                    }
+                )
+            semantic_metadata["per_sentence_translated_flags"] = translated_flags
+
         logger.debug("Step 7: Semantic metadata prepared for API response: %s", semantic_metadata)
     
-    # Step 7 (Phase 6): Extract Qwen metadata from QwenAdapter output
+    # Step 7 (Phase 6 + Phase 8): Extract Qwen metadata from QwenAdapter outputs
     qwen_metadata: Optional[Dict[str, Any]] = None
-    if qwen_output and qwen_output.metadata:
-        # Basic counts and confidence
-        qwen_conf = qwen_output.qwen_confidence
-        changed_tokens = qwen_output.changed_tokens or []
-        preserved_tokens = qwen_output.preserved_tokens or []
-        locked_tokens = qwen_output.locked_tokens or []
+    if qwen_outputs:
+        # Aggregate basic counts and confidence across paragraphs
+        total_changed = 0
+        total_preserved = 0
+        total_locked = 0
+        confidences: List[float] = []
+        unlocked_phrases = 0
+        locked_phrases = 0
 
-        total_tokens = len(changed_tokens) + len(preserved_tokens)
+        for out in qwen_outputs:
+            if not out or not out.metadata:
+                continue
+            changed_tokens = out.changed_tokens or []
+            preserved_tokens = out.preserved_tokens or []
+            locked_tokens = out.locked_tokens or []
+
+            total_changed += len(changed_tokens)
+            total_preserved += len(preserved_tokens)
+            total_locked += len(locked_tokens)
+            confidences.append(out.qwen_confidence)
+
+            meta = out.metadata or {}
+            unlocked_phrases += meta.get("unlocked_phrases_count", 0)
+            locked_phrases += meta.get("locked_phrases_count", 0)
+
+        total_tokens = total_changed + total_preserved
         tokens_modified_percent = (
-            (len(changed_tokens) / total_tokens) * 100.0 if total_tokens > 0 else 0.0
+            (total_changed / total_tokens) * 100.0 if total_tokens > 0 else 0.0
         )
         tokens_locked_percent = (
-            (len(locked_tokens) / total_tokens) * 100.0 if total_tokens > 0 else 0.0
+            (total_locked / total_tokens) * 100.0 if total_tokens > 0 else 0.0
         )
         tokens_preserved_percent = (
-            (len(preserved_tokens) / total_tokens) * 100.0 if total_tokens > 0 else 0.0
+            (total_preserved / total_tokens) * 100.0 if total_tokens > 0 else 0.0
         )
-
-        meta = qwen_output.metadata or {}
 
         qwen_metadata = {
             "engine": "Qwen2.5-1.5B-Instruct",
-            "qwen_confidence": qwen_conf,
-            "tokens_modified": len(changed_tokens),
-            "tokens_locked": len(locked_tokens),
-            "tokens_preserved": len(preserved_tokens),
+            "qwen_confidence": sum(confidences) / len(confidences) if confidences else 0.0,
+            "tokens_modified": total_changed,
+            "tokens_locked": total_locked,
+            "tokens_preserved": total_preserved,
             "tokens_modified_percent": tokens_modified_percent,
             "tokens_locked_percent": tokens_locked_percent,
             "tokens_preserved_percent": tokens_preserved_percent,
-            "phrase_spans_refined": meta.get("unlocked_phrases_count", 0),
-            "phrase_spans_locked": meta.get("locked_phrases_count", 0),
+            "phrase_spans_refined": unlocked_phrases,
+            "phrase_spans_locked": locked_phrases,
+            "paragraphs_total": len(paragraphs) if "paragraphs" in locals() else None,
+            "paragraphs_refined": len(qwen_outputs),
         }
 
         logger.debug("Phase 6 Step 7: Qwen metadata prepared for API response: %s", qwen_metadata)
+
+    # Normalize canonicalization metadata for API consumers
+    canonical_meta = canonical_meta if 'canonical_meta' in locals() else {}
+    if canonical_meta is None:
+        canonical_meta = {}
+    # Provide a stable noise filter count field
+    if "noise_filtered_count" not in canonical_meta:
+        canonical_meta["noise_filtered_count"] = canonical_meta.get("trailing_noise_removed", 0)
 
     return InferenceResponse(
         text=full_text,
@@ -961,4 +1148,6 @@ async def process_image(file: UploadFile = File(...)):
         translation_source=translation_source,  # Translation dictionary source (CC-CEDICT, RuleBasedTranslator, or Error)
         semantic=semantic_metadata,  # Phase 5 Step 7: Semantic refinement metadata (optional)
         qwen=qwen_metadata,  # Phase 6 Step 7: Qwen refinement metadata (optional)
+        canonical_text=full_text,  # Phase 8 Step 0: canonicalized and noise-filtered text
+        canonical_meta=canonical_meta,  # Phase 8 Step 0 metadata
     )

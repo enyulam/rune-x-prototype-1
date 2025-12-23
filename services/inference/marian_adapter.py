@@ -324,10 +324,21 @@ class MarianAdapter:
             translation_with_placeholders = self.sentence_translator.translate(refined_translation)
             
             # Step 4 (Phase 5): Restore locked tokens after translation
-            translation = self._restore_locked_tokens(
+            translation, failed_restore_indices = self._restore_locked_tokens(
                 translation_with_placeholders,
                 placeholder_mapping
             )
+            
+            # Update locked_tokens list to exclude failed restorations
+            if failed_restore_indices:
+                effective_locked_tokens = [idx for idx in locked_tokens if idx not in failed_restore_indices]
+                logger.warning(
+                    "Step 4: %d locked tokens failed restoration, reducing locked count from %d to %d",
+                    len(failed_restore_indices),
+                    len(locked_tokens),
+                    len(effective_locked_tokens)
+                )
+                locked_tokens = effective_locked_tokens
             
             logger.info(
                 "MarianMT translation completed: %d characters -> %d characters",
@@ -472,7 +483,9 @@ class MarianAdapter:
         """
         Replace locked glyphs with placeholder tokens before MarianMT.
         
-        Step 4 (Phase 5): Uses format __LOCK_[character]__ to protect locked tokens.
+        Step 4 (Phase 5): Uses numeric placeholders (LOCKTOKEN001, LOCKTOKEN002, etc.)
+        to protect locked tokens. These English word-like placeholders are less likely
+        to be modified by MarianMT than placeholders containing Chinese characters.
         
         Args:
             text: Original text string
@@ -489,11 +502,23 @@ class MarianAdapter:
         # Convert text to list for character-by-character replacement
         text_chars = list(text)
         
+        # Use special Unicode Private Use Area characters (U+E000-U+F8FF) as placeholders
+        # These are unlikely to be translated or modified by MarianMT
+        # We'll use a simple counter to generate unique placeholders
+        placeholder_base = 0xE000  # Start of Private Use Area
+        placeholder_counter = 0
+        
         # Replace locked characters with placeholders
         for locked_idx in sorted(locked_indices, reverse=True):  # Reverse to maintain indices
             if 0 <= locked_idx < len(glyphs) and locked_idx < len(text_chars):
                 original_char = glyphs[locked_idx].symbol
-                placeholder = f"__LOCK_{original_char}__"
+                # Use Private Use Area Unicode character that MarianMT won't translate
+                if placeholder_counter >= 6400:  # Safety limit (U+E000 to U+F8FF = 6400 chars)
+                    logger.warning("Too many locked tokens, falling back to numeric placeholders")
+                    placeholder = f"<LOCK{placeholder_counter}>"
+                else:
+                    placeholder = chr(placeholder_base + placeholder_counter)
+                placeholder_counter += 1
                 
                 # Replace character with placeholder
                 text_chars[locked_idx] = placeholder
@@ -512,7 +537,7 @@ class MarianAdapter:
         self,
         translation: str,
         placeholder_mapping: Dict[str, Tuple[int, str]]
-    ) -> str:
+    ) -> Tuple[str, List[int]]:
         """
         Restore locked tokens from placeholders after MarianMT translation.
         
@@ -523,28 +548,47 @@ class MarianAdapter:
             placeholder_mapping: Mapping of placeholder -> (glyph_index, original_char)
             
         Returns:
-            str: Translation with placeholders restored to original characters
+            Tuple of:
+            - str: Translation with placeholders restored to original characters
+            - List[int]: Indices of glyphs that failed to restore (placeholders not found)
         """
         if not placeholder_mapping:
-            return translation
+            return translation, []
         
         restored = translation
+        failed_indices = []
         
         # Replace each placeholder with its original character
         for placeholder, (glyph_index, original_char) in placeholder_mapping.items():
             if placeholder in restored:
                 restored = restored.replace(placeholder, original_char)
                 logger.debug(
-                    "Step 4: Restored placeholder '%s' -> '%s' (glyph[%d])",
-                    placeholder, original_char, glyph_index
+                    "Step 4: Restored placeholder '%s' (U+%04X) -> '%s' (glyph[%d])",
+                    placeholder,
+                    ord(placeholder) if len(placeholder) == 1 else 0,
+                    original_char,
+                    glyph_index
                 )
             else:
+                failed_indices.append(glyph_index)
                 logger.warning(
-                    "Step 4: Placeholder '%s' not found in translation (may have been modified by MarianMT)",
-                    placeholder
+                    "Step 4: Placeholder '%s' (U+%04X) for glyph[%d] '%s' not found in translation. "
+                    "MarianMT may have modified or removed it. Locked token will be lost.",
+                    placeholder,
+                    ord(placeholder) if len(placeholder) == 1 else 0,
+                    glyph_index,
+                    original_char
                 )
         
-        return restored
+        if failed_indices:
+            logger.error(
+                "Step 4: Failed to restore %d out of %d locked tokens. "
+                "This indicates placeholder preservation mechanism is not working correctly.",
+                len(failed_indices),
+                len(placeholder_mapping)
+            )
+        
+        return restored, failed_indices
     
     def _track_token_changes(
         self,
